@@ -185,6 +185,13 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:10px;p
 .unlock-banner h3{font-size:20px;font-weight:900;margin-bottom:6px}
 .unlock-banner p{font-size:13px;opacity:.9}
 
+
+/* EXAM ATTEMPTS */
+.attempt-dots{display:flex;gap:8px;margin:10px auto;justify-content:center}
+.attempt-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--g4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);background:#fff}
+.attempt-dot.used-pass{background:var(--g2);border-color:var(--g1);color:#fff}
+.attempt-dot.used-fail{background:var(--red);border-color:#c0392b;color:#fff}
+
 /* ONBOARDING */
 .onboard-wrap{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;z-index:200;padding:24px}
 .onboard-wrap.hidden{display:none}
@@ -470,6 +477,55 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:10px;p
     <textarea class="import-box" id="importBox" placeholder="Paste code here 在这里粘贴..."></textarea>
     <button class="btn btn-amber" onclick="importSaveCode()" style="width:100%;padding:13px;border-radius:13px;margin-top:10px">📥 Load Progress 载入进度</button>
     <div class="feedback" id="importFb" style="display:none;margin-top:10px"></div>
+  </div>
+
+
+  <div class="card" id="sheetsCard">
+    <div style="font-weight:800;color:var(--g1);margin-bottom:6px;font-size:15px">☁️ Google Sheets Sync</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Auto-sync progress between phone and laptop via Google Sheets. Enter your script URL below.<br>通过Google表格自动同步进度。在下方输入脚本URL。</div>
+    <div id="sheetsStatus" style="margin-bottom:10px"></div>
+    <input id="sheetsUrl" type="url" placeholder="Paste your Apps Script URL here..." style="width:100%;border:2px solid var(--g4);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);background:var(--g7);margin-bottom:10px">
+    <div style="display:flex;gap:9px">
+      <button class="btn btn-primary" onclick="saveSheetUrl()" style="padding:12px;border-radius:13px">Save URL 保存</button>
+      <button class="btn btn-secondary" onclick="syncToSheets()" style="padding:12px;border-radius:13px">⬆️ Sync Now 同步</button>
+      <button class="btn btn-secondary" onclick="loadFromSheets()" style="padding:12px;border-radius:13px">⬇️ Load 载入</button>
+    </div>
+    <div style="margin-top:12px;background:var(--g7);border-radius:10px;padding:12px;font-size:12px;color:var(--muted);line-height:1.8">
+      <strong>How to set up 如何设置:</strong><br>
+      1. Go to sheets.google.com → create a blank sheet<br>
+      2. Click Extensions → Apps Script<br>
+      3. Paste the script I gave you → Deploy → Get URL<br>
+      4. Paste the URL above and tap Save<br>
+      <a href="https://sheets.google.com" target="_blank" style="color:var(--g2);font-weight:700">Open Google Sheets →</a>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <div style="font-weight:800;color:var(--g1);margin-bottom:6px;font-size:15px">📋 Apps Script Code 脚本代码</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Copy this code into your Google Apps Script editor. 复制这段代码到Google脚本编辑器。</div>
+    <div class="save-code" id="appsScriptCode" style="max-height:120px">function doPost(e){
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var sh=ss.getSheetByName("Progress")||ss.insertSheet("Progress");
+  var data=JSON.parse(e.postData.contents);
+  var rows=sh.getDataRange().getValues();
+  var found=-1;
+  for(var i=0;i<rows.length;i++){if(rows[i][0]===data.name){found=i;break;}}
+  if(found>=0)sh.getRange(found+1,2).setValue(data.data);
+  else sh.appendRow([data.name,data.data,new Date().toISOString()]);
+  return ContentService.createTextOutput(JSON.stringify({status:"ok"})).setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e){
+  var name=e.parameter.name;
+  var ss=SpreadsheetApp.getActiveSpreadsheet();
+  var sh=ss.getSheetByName("Progress");
+  if(!sh)return ContentService.createTextOutput(JSON.stringify({status:"error",message:"No data"})).setMimeType(ContentService.MimeType.JSON);
+  var rows=sh.getDataRange().getValues();
+  for(var i=0;i<rows.length;i++){if(rows[i][0]===name){return ContentService.createTextOutput(JSON.stringify({status:"ok",data:rows[i][1]})).setMimeType(ContentService.MimeType.JSON);}}
+  return ContentService.createTextOutput(JSON.stringify({status:"error",message:"Not found"})).setMimeType(ContentService.MimeType.JSON);
+}</div>
+    <button class="btn btn-secondary" onclick="copyAppsScript()" style="width:100%;padding:12px;border-radius:13px;margin-top:8px">📋 Copy Script Code 复制脚本</button>
+    <div class="feedback good" id="scriptCopyFb" style="display:none;margin-top:8px">✅ Copied! Paste into Apps Script editor.</div>
   </div>
 
   <div class="card" style="border:1.5px solid #f5aaaa">
@@ -800,60 +856,133 @@ function prevStory(){var s=getCurLevel().stories;S.storyIdx=(S.storyIdx-1+s.leng
 
 // ── EXAM ──
 function shuffle(a){return a.slice().sort(function(){return Math.random()-.5;});}
-function buildExamQs(coverIds,count){
+
+// Build exam questions — 3 versions with different question styles
+function buildExamQs(coverIds, count, version){
+  var v = (version||0) % 3;
   var pool=[];
   coverIds.forEach(function(id){
     var lv=getLevelById(id);if(!lv)return;
-    lv.vocab.forEach(function(v){
-      var dzh=lv.vocab.filter(function(x){return x.w!==v.w;}).slice(0,3).map(function(x){return x.zh;});
-      var den=lv.vocab.filter(function(x){return x.w!==v.w;}).slice(0,3).map(function(x){return x.w;});
-      pool.push({q:'What does "'+v.w+'" mean?\n"'+v.w+'"是什么意思？',a:v.zh,opts:shuffle([v.zh].concat(dzh))});
-      pool.push({q:'Which word means "'+v.zh+'"?\n哪个词的意思是"'+v.zh+'"？',a:v.w,opts:shuffle([v.w].concat(den))});
-    });
-    lv.sentences.forEach(function(s){
-      var idx=Math.floor(Math.random()*s.en.length),miss=s.en[idx];
-      var blank=s.en.map(function(w,i){return i===idx?"____":w;}).join(" ");
-      var wrongs=lv.vocab.slice(0,3).map(function(v){return v.w;}).filter(function(w){return w!==miss;});
-      pool.push({q:"Fill in the blank:\n"+blank+"\n("+s.zh+")",a:miss,opts:shuffle([miss].concat(wrongs.slice(0,3)))});
-    });
+    if(v===0){
+      // Version 1: meaning + reverse
+      lv.vocab.forEach(function(voc){
+        var dzh=lv.vocab.filter(function(x){return x.w!==voc.w;}).slice(0,3).map(function(x){return x.zh;});
+        var den=lv.vocab.filter(function(x){return x.w!==voc.w;}).slice(0,3).map(function(x){return x.w;});
+        pool.push({q:'What does "'+voc.w+'" mean?\n"'+voc.w+'" 是什么意思？',a:voc.zh,opts:shuffle([voc.zh].concat(dzh))});
+        pool.push({q:'Which word means "'+voc.zh+'"?\n哪个词意思是"'+voc.zh+'"？',a:voc.w,opts:shuffle([voc.w].concat(den))});
+      });
+    } else if(v===1){
+      // Version 2: fill in blank sentences + meaning
+      lv.sentences.forEach(function(s){
+        var idx=Math.floor(Math.random()*s.en.length),miss=s.en[idx];
+        var blank=s.en.map(function(w,i){return i===idx?"____":w;}).join(" ");
+        var wrongs=lv.vocab.slice(0,3).map(function(voc){return voc.w;}).filter(function(w){return w!==miss;});
+        pool.push({q:"Complete the sentence 完成句子:\n"+blank+"\n("+s.zh+")",a:miss,opts:shuffle([miss].concat(wrongs.slice(0,3)))});
+      });
+      lv.vocab.forEach(function(voc){
+        var dzh=lv.vocab.filter(function(x){return x.w!==voc.w;}).slice(0,3).map(function(x){return x.zh;});
+        pool.push({q:'What does "'+voc.w+'" mean?',a:voc.zh,opts:shuffle([voc.zh].concat(dzh))});
+      });
+    } else {
+      // Version 3: reverse only + example sentence context
+      lv.vocab.forEach(function(voc){
+        var den=lv.vocab.filter(function(x){return x.w!==voc.w;}).slice(0,3).map(function(x){return x.w;});
+        pool.push({q:'Which English word means "'+voc.zh+'"?',a:voc.w,opts:shuffle([voc.w].concat(den))});
+        // Example sentence with blank
+        var egWords=voc.eg.split(' ');
+        var blankIdx=egWords.findIndex(function(w){return w.toLowerCase().replace(/[^a-z]/g,'')===voc.w.toLowerCase().replace(/[^a-z]/g,'');});
+        if(blankIdx>=0){
+          var miss2=egWords[blankIdx];
+          var blankSent=egWords.map(function(w,i){return i===blankIdx?"____":w;}).join(' ');
+          var wrongs2=lv.vocab.filter(function(x){return x.w!==voc.w;}).slice(0,3).map(function(x){return x.w;});
+          pool.push({q:'Fill in the blank:\n'+blankSent,a:miss2,opts:shuffle([miss2].concat(wrongs2.slice(0,3)))});
+        }
+      });
+    }
   });
   return shuffle(pool).slice(0,count);
 }
 
-var examState={cpId:null,qs:[],curr:0,score:0,answered:false,wrongQs:[]};
+var examState={cpId:null,qs:[],curr:0,score:0,answered:false,wrongQs:[],version:0};
+
 function renderExamHome(){
   var nextCPid=getNextCP();
   if(!nextCPid){
     document.getElementById("examSub").textContent=S.graduate?"You have graduated! 你毕业了！":"No exams available yet.";
-    document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:52px">'+(S.graduate?"🎓":"📚")+'</div><div style="font-size:16px;font-weight:800;color:var(--g1);margin-top:12px">'+(S.graduate?"You have graduated!":"Complete levels first!")+'</div></div>';
+    document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:52px">'+(S.graduate?"🎓":"📚")+'</div><div style="font-size:16px;font-weight:800;color:var(--g1);margin-top:12px">'+(S.graduate?"You have graduated! 你毕业了！":"Complete levels first!")+'</div></div>';
     return;
   }
   var cp=getCPById(nextCPid);
   if(cp.gate&&!(S.completedCPs[cp.gate]&&S.completedCPs[cp.gate].passed)){
     var g=getCPById(cp.gate);
     document.getElementById("examSub").textContent=cp.label+" · Locked";
-    document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:42px">🔒</div><div style="font-size:15px;font-weight:800;color:var(--g1);margin:12px 0 6px">'+cp.label+' is locked</div><div style="font-size:13px;color:var(--muted)">Pass '+g.label+' first.</div></div>';
+    document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:42px">🔒</div><div style="font-size:15px;font-weight:800;color:var(--g1);margin:12px 0 6px">'+cp.label+' is locked</div><div style="font-size:13px;color:var(--muted)">Pass '+g.label+' first. 先通过'+g.label+'。</div></div>';
     return;
   }
   var failed=S.failedCPs[nextCPid],cramDone=failed?failed.cramRounds:0,locked=failed&&cramDone<10;
+  var attempts=S.examAttempts&&S.examAttempts[nextCPid]?S.examAttempts[nextCPid]:[];
+  var attemptNum=attempts.length;
+
   document.getElementById("examSub").textContent=cp.label+(cp.isMajor?" 🎓":"");
   var coverNames=cp.covers.map(function(id){var l=getLevelById(id);return l?l.name:"";}).join(", ");
-  var infoHtml='<div style="background:var(--g6);border-radius:12px;padding:13px;margin-bottom:16px;font-size:13px;line-height:1.8;text-align:left">✅ Pass: <strong>'+cp.passMin+'/100</strong><br>📋 20 questions<br>⭐ +10 stars if you pass'+(cp.isMajor?'<br>🎓 Certificate if you pass!':'')+(failed?'<br>⚠️ Previous: '+failed.lastScore+'/100':'')+(locked?'<br>🔒 Complete <strong>'+cramDone+'/10</strong> cram rounds first':'')+' </div>';
-  var btn=locked?'<button class="btn btn-amber" onclick="switchTab(\'cram\')" style="padding:14px;font-size:15px;border-radius:13px">🔥 Go to Cram ('+cramDone+'/10)</button>':'<button class="btn btn-primary" onclick="startExam(\''+nextCPid+'\')" style="padding:14px;font-size:15px;border-radius:13px">Start Exam 开始考试 →</button>';
-  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:48px">'+(cp.isMajor?"🎓":"📝")+'</div><div style="font-size:18px;font-weight:800;color:var(--g1);margin:10px 0 4px">'+cp.label+'</div><div style="font-size:13px;color:var(--muted);margin-bottom:14px">Covers: '+coverNames+'</div>'+infoHtml+btn+'</div>';
+
+  var versionNames=["Version 1 · Meaning Questions","Version 2 · Fill in Blanks","Version 3 · Reverse + Context"];
+  var versionBadge=attemptNum<3?'<div class="version-badge">📋 '+versionNames[attemptNum%3]+'</div>':"";
+
+  var attDots='<div class="attempt-dots" style="justify-content:center">';
+  for(var i=0;i<3;i++){var a=attempts[i];attDots+='<div class="attempt-dot '+(a===undefined?"":(a?"used-pass":"used-fail"))+'">'+(i+1)+'</div>';}
+  attDots+='</div>';
+
+  var infoHtml='<div style="background:var(--g6);border-radius:12px;padding:13px;margin-bottom:12px;font-size:13px;line-height:1.9;text-align:left">'
+    +'✅ Pass mark: <strong>'+cp.passMin+'/100</strong><br>'
+    +'📋 20 questions · 3 exam versions<br>'
+    +'⭐ +10 stars if you pass'
+    +(cp.isMajor?'<br>🎓 Certificate if you pass! 通过可打印证书！':'')
+    +(failed?'<br>⚠️ Previous best: '+failed.lastScore+'/100':'')
+    +(locked?'<br>🔒 Complete <strong>'+cramDone+'/10</strong> cram rounds first':'')
+    +'</div>';
+
+  var btn=locked
+    ?'<button class="btn btn-amber" onclick="switchTab(\'cram\')" style="padding:14px;border-radius:13px">🔥 Go to Cram ('+cramDone+'/10)</button>'
+    :attemptNum>=3&&!attempts.some(Boolean)
+    ?'<div class="alert-banner alert-cram">All 3 attempts used. Cram mode activated! 补习模式已开启。</div>'
+    :'<button class="btn btn-primary" onclick="startExam(\''+nextCPid+'\')" style="padding:14px;border-radius:13px">Start Exam 开始考试 →</button>';
+
+  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center">'
+    +'<div style="font-size:48px">'+(cp.isMajor?"🎓":"📝")+'</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--g1);margin:10px 0 4px">'+cp.label+'</div>'
+    +'<div style="font-size:13px;color:var(--muted);margin-bottom:12px">Covers: '+coverNames+'</div>'
+    +versionBadge+attDots
+    +infoHtml+btn+'</div>';
 }
+
 function startExam(cpId){
+  if(!S.examAttempts)S.examAttempts={};
+  if(!S.examAttempts[cpId])S.examAttempts[cpId]=[];
+  var version=S.examAttempts[cpId].length%3;
   var cp=getCPById(cpId);
-  examState={cpId:cpId,qs:buildExamQs(cp.covers,20),curr:0,score:0,answered:false,wrongQs:[]};
+  examState={cpId:cpId,qs:buildExamQs(cp.covers,20,version),curr:0,score:0,answered:false,wrongQs:[],version:version};
   renderExamQ();
 }
+
 function renderExamQ(){
   var qs=examState.qs,curr=examState.curr;
   if(curr>=qs.length){renderExamResult();return;}
   var q=qs[curr];examState.answered=false;
   var optsHtml=q.opts.map(function(o){return '<button class="quiz-opt" onclick="answerExam(this,\''+o.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',\''+q.a.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'+o+'</button>';}).join("");
-  document.getElementById("examBody").innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="font-size:12px;color:var(--muted);font-weight:700">Q '+(curr+1)+' / '+qs.length+'</span><span style="font-size:12px;color:var(--g1);font-weight:700">Score: '+examState.score*5+'</span></div><div class="prog-wrap"><div class="prog-fill" style="width:'+(curr/qs.length*100)+'%"></div></div><div class="quiz-q-box" style="margin-top:12px">'+q.q.replace(/\n/g,"<br>")+'</div><div class="quiz-opts" id="examOpts">'+optsHtml+'</div><div class="feedback" id="examFb" style="display:none"></div><button class="btn btn-primary" id="examNext" onclick="nextExamQ()" style="display:none;margin-top:12px">Next 下一题 →</button></div>';
+  document.getElementById("examBody").innerHTML='<div class="card">'
+    +'<div style="display:flex;justify-content:space-between;margin-bottom:10px">'
+    +'<span style="font-size:12px;color:var(--muted);font-weight:700">Q '+(curr+1)+' / '+qs.length+'</span>'
+    +'<span style="font-size:12px;color:var(--g1);font-weight:700">Score: '+Math.round(examState.score/qs.length*100)+'</span>'
+    +'</div>'
+    +'<div class="prog-wrap"><div class="prog-fill" style="width:'+(curr/qs.length*100)+'%"></div></div>'
+    +'<div class="quiz-q-box" style="margin-top:12px">'+q.q.replace(/\n/g,"<br>")+'</div>'
+    +'<div class="quiz-opts" id="examOpts">'+optsHtml+'</div>'
+    +'<div class="feedback" id="examFb" style="display:none"></div>'
+    +'<button class="btn btn-primary" id="examNext" onclick="nextExamQ()" style="display:none;margin-top:12px">Next 下一题 →</button>'
+    +'</div>';
 }
+
 function answerExam(btn,chosen,correct){
   if(examState.answered)return;examState.answered=true;
   document.querySelectorAll(".quiz-opt").forEach(function(b){b.disabled=true;if(b.textContent===correct)b.classList.add("correct");});
@@ -863,13 +992,25 @@ function answerExam(btn,chosen,correct){
   else{examState.wrongQs.push(examState.qs[examState.curr]);fb.className="feedback bad";fb.textContent="❌ Answer: "+correct;}
   document.getElementById("examNext").style.display="block";
 }
+
 function nextExamQ(){examState.curr++;renderExamQ();}
+
 function renderExamResult(){
   var cp=getCPById(examState.cpId);
-  var pct=Math.round(examState.score/examState.qs.length*100),passed=pct>=cp.passMin;
-  S.completedCPs[examState.cpId]={score:pct,passed:passed,date:new Date().toLocaleDateString("en-SG")};
+  var pct=Math.round(examState.score/examState.qs.length*100);
+  var passed=pct>=cp.passMin;
+
+  if(!S.examAttempts)S.examAttempts={};
+  if(!S.examAttempts[examState.cpId])S.examAttempts[examState.cpId]=[];
+  S.examAttempts[examState.cpId].push(passed);
+
+  S.completedCPs[examState.cpId]={score:pct,passed:passed,date:new Date().toLocaleDateString("en-SG"),
+    bestScore:Math.max(pct,(S.completedCPs[examState.cpId]&&S.completedCPs[examState.cpId].bestScore)||0)};
+
   if(passed){
-    addStar(10);delete S.failedCPs[examState.cpId];
+    addStar(10);
+    delete S.failedCPs[examState.cpId];
+    if(S.examAttempts[examState.cpId])delete S.examAttempts[examState.cpId];
     if(cp.unlocks&&cp.unlocks.indexOf("__")<0){
       var fromIdx=CUR.findIndex(function(l){return l.id===cp.unlocks;});
       if(fromIdx>=0){if(S.unlockedLevels.indexOf(CUR[fromIdx].id)<0)S.unlockedLevels.push(CUR[fromIdx].id);if(CUR[fromIdx+1]&&S.unlockedLevels.indexOf(CUR[fromIdx+1].id)<0)S.unlockedLevels.push(CUR[fromIdx+1].id);}
@@ -878,16 +1019,52 @@ function renderExamResult(){
     if(cp.id==="cp8"&&S.unlockedLevels.indexOf("s3")<0)S.unlockedLevels.push("s3","s4");
     if(cp.id==="olevel")S.graduate=true;
     saveS();
-  }else{
-    S.failedCPs[examState.cpId]={cramRounds:0,wrongQs:examState.wrongQs,lastScore:pct};saveS();
+  } else {
+    // Track failures — after 3 fails activate cram
+    var allAttempts=S.examAttempts[examState.cpId]||[];
+    if(allAttempts.length>=3&&!allAttempts.some(Boolean)){
+      S.failedCPs[examState.cpId]={cramRounds:0,wrongQs:examState.wrongQs,lastScore:pct};
+    } else {
+      // Update last score even on non-cram fail
+      if(!S.failedCPs[examState.cpId])S.failedCPs[examState.cpId]={cramRounds:0,wrongQs:examState.wrongQs,lastScore:pct};
+      S.failedCPs[examState.cpId].lastScore=pct;
+      S.failedCPs[examState.cpId].wrongQs=examState.wrongQs;
+    }
+    saveS();
   }
   updateHeader();
+
+  var allAttempts=S.examAttempts&&S.examAttempts[examState.cpId]?S.examAttempts[examState.cpId]:[];
+  var attDots='<div class="attempt-dots" style="justify-content:center">';
+  for(var i=0;i<3;i++){var a=allAttempts[i];attDots+='<div class="attempt-dot '+(a===undefined?"":(a?"used-pass":"used-fail"))+'">'+(i+1)+'</div>';}
+  attDots+='</div>';
+
   var unlockMsg="";
-  if(passed&&cp.unlocks&&cp.unlocks.indexOf("__")<0){var ul=getLevelById(cp.unlocks);if(ul)unlockMsg="<br>🎉 <strong>"+ul.name+" UNLOCKED!</strong>";}
-  if(passed&&cp.id==="psle")unlockMsg="<br>🎉 <strong>Secondary school UNLOCKED!</strong>";
-  if(passed&&cp.id==="olevel")unlockMsg="<br>🎓 <strong>You have GRADUATED!</strong>";
-  var btns=((!passed)?'<button class="btn btn-amber" onclick="switchTab(\'cram\')">🔥 Cram Practice</button>':'')+(passed&&cp.certId?'<button class="btn btn-primary" onclick="printCert(\''+cp.certId+'\')">🎓 Print Certificate</button>':'')+'<button class="btn btn-secondary" onclick="renderExamHome()">Back 返回</button>';
-  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:60px">'+(passed?"🏆":"💪")+'</div><div style="font-size:76px;font-weight:900;color:var(--g1);line-height:1">'+pct+'</div><div style="font-size:12px;color:var(--muted)">out of 100</div><div style="font-size:18px;font-weight:800;margin-top:8px">'+(passed?"You passed! 你通过了！":"Keep trying! 继续加油！")+'</div><div style="font-size:13px;color:var(--muted);margin-top:4px">'+examState.score+' / '+examState.qs.length+' correct · Pass: '+cp.passMin+(passed?' · +10 ⭐':'')+unlockMsg+(!passed?'<br>⚠️ Complete 10 cram rounds then retake':'')+' </div><div class="nav-row" style="margin-top:18px">'+btns+'</div></div>';
+  if(passed&&cp.unlocks&&cp.unlocks.indexOf("__")<0){var ul=getLevelById(cp.unlocks);if(ul)unlockMsg="<br>🎉 <strong>"+ul.name+" UNLOCKED! 已解锁！</strong>";}
+  if(passed&&cp.id==="psle")unlockMsg="<br>🎉 <strong>Secondary school UNLOCKED! 中学已解锁！</strong>";
+  if(passed&&cp.id==="olevel")unlockMsg="<br>🎓 <strong>You have GRADUATED! 你毕业了！</strong>";
+
+  var cramActivated=!passed&&allAttempts.length>=3&&!allAttempts.some(Boolean);
+  var canRetry=!passed&&allAttempts.length<3;
+
+  var btns=(cramActivated?'<button class="btn btn-amber" onclick="switchTab(\'cram\')">🔥 Cram Practice 补习</button>':'')
+    +(canRetry?'<button class="btn btn-primary" onclick="renderExamHome()">Try Again ('+allAttempts.length+'/3) →</button>':'')
+    +(passed&&cp.certId?'<button class="btn btn-primary" onclick="printCert(\''+cp.certId+'\')">🎓 Print Certificate</button>':'')
+    +'<button class="btn btn-secondary" onclick="renderExamHome()">Back 返回</button>';
+
+  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center">'
+    +'<div style="font-size:60px">'+(passed?"🏆":"💪")+'</div>'
+    +'<div style="font-size:76px;font-weight:900;color:var(--g1);line-height:1">'+pct+'</div>'
+    +'<div style="font-size:12px;color:var(--muted)">out of 100 · Pass: '+cp.passMin+'</div>'
+    +'<div style="font-size:18px;font-weight:800;margin-top:8px">'+(passed?"You passed! 你通过了！":"Keep trying! 继续加油！")+'</div>'
+    +attDots
+    +'<div style="font-size:13px;color:var(--muted);margin-top:4px">'
+    +examState.score+' / '+examState.qs.length+' correct'
+    +(passed?' · +10 ⭐':'')
+    +unlockMsg
+    +(cramActivated?'<br>⚠️ Cram mode activated. Complete 10 rounds then retake. 补习模式开启。':'')
+    +'</div>'
+    +'<div class="nav-row" style="margin-top:18px">'+btns+'</div></div>';
 }
 
 // ── CRAM ──
@@ -1060,6 +1237,7 @@ function renderSettings(){
   });}
   renderCalendar();
   try{document.getElementById("saveCodeBox").textContent=btoa(unescape(encodeURIComponent(JSON.stringify(S))));}catch(e){document.getElementById("saveCodeBox").textContent="Error";}
+  var su=document.getElementById("sheetsUrl");if(su)su.value=getSheetsUrl();
 }
 function saveStudyDays(){
   var days=[];
@@ -1534,6 +1712,68 @@ function finishTest(){
       +'</div>';
   }
 }
+
+
+// ── GOOGLE SHEETS SYNC ──
+var SHEETS_KEY="mama_sheets_url";
+
+function getSheetsUrl(){return S.sheetsUrl||localStorage.getItem(SHEETS_KEY)||"";}
+
+function saveSheetUrl(){
+  var url=document.getElementById("sheetsUrl").value.trim();
+  if(!url){showSheetStatus("error","Please enter a URL.");return;}
+  S.sheetsUrl=url;saveS();
+  localStorage.setItem(SHEETS_KEY,url);
+  showSheetStatus("ok","✅ URL saved! Try syncing now.");
+}
+
+function showSheetStatus(type,msg){
+  var el=document.getElementById("sheetsStatus");if(!el)return;
+  el.innerHTML='<div class="feedback '+(type==="ok"?"good":"bad")+'" style="margin:0">'+msg+'</div>';
+  setTimeout(function(){el.innerHTML="";},4000);
+}
+
+function syncToSheets(){
+  var url=getSheetsUrl();
+  if(!url){showSheetStatus("error","Please enter and save your Apps Script URL first.");return;}
+  showSheetStatus("ok","⏳ Syncing... 同步中...");
+  var payload=JSON.stringify({action:"save",name:S.name||"Mama",data:btoa(unescape(encodeURIComponent(JSON.stringify(S))))});
+  fetch(url,{method:"POST",body:payload})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.status==="ok")showSheetStatus("ok","✅ Saved to Google Sheets! 已保存到表格！");
+      else showSheetStatus("error","❌ Error: "+(d.message||"Unknown error"));
+    })
+    .catch(function(e){showSheetStatus("error","❌ Could not connect. Check your URL and internet connection.");});
+}
+
+function copyAppsScript(){
+  var code=document.getElementById("appsScriptCode").textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(code).then(function(){
+    document.getElementById("scriptCopyFb").style.display="block";
+    setTimeout(function(){document.getElementById("scriptCopyFb").style.display="none";},3000);
+  });}else{alert("Select and copy the code manually.");}
+}
+
+function loadFromSheets(){
+  var url=getSheetsUrl();
+  if(!url){showSheetStatus("error","Please enter and save your Apps Script URL first.");return;}
+  showSheetStatus("ok","⏳ Loading... 载入中...");
+  fetch(url+"?action=load&name="+(S.name||"Mama"))
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.status==="ok"&&d.data){
+        var parsed=JSON.parse(decodeURIComponent(escape(atob(d.data))));
+        S=Object.assign({},S,parsed);
+        saveS();updateStreak();updateHeader();renderSettings();
+        showSheetStatus("ok","✅ Progress loaded from Sheets! 已从表格载入！");
+      } else {
+        showSheetStatus("error","❌ No data found. Sync first from your other device.");
+      }
+    })
+    .catch(function(e){showSheetStatus("error","❌ Could not connect. Check your URL and internet connection.");});
+}
+
 
 // ── INIT ──
 loadS();
