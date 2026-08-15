@@ -254,16 +254,16 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:10px;p
     <p>How many days a week do you want to study?<br>你每周想学习几天？</p>
     <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Tap to select your study days 点击选择学习日</div>
     <div class="day-picker" id="dayPicker">
-      <button class="day-btn" data-d="0">Sun</button>
-      <button class="day-btn" data-d="1">Mon</button>
-      <button class="day-btn" data-d="2">Tue</button>
-      <button class="day-btn" data-d="3">Wed</button>
-      <button class="day-btn" data-d="4">Thu</button>
-      <button class="day-btn" data-d="5">Fri</button>
-      <button class="day-btn" data-d="6">Sat</button>
+      <button type="button" class="day-btn" data-d="0" onclick="toggleDay(this)">Sun</button>
+      <button type="button" class="day-btn" data-d="1" onclick="toggleDay(this)">Mon</button>
+      <button type="button" class="day-btn" data-d="2" onclick="toggleDay(this)">Tue</button>
+      <button type="button" class="day-btn" data-d="3" onclick="toggleDay(this)">Wed</button>
+      <button type="button" class="day-btn" data-d="4" onclick="toggleDay(this)">Thu</button>
+      <button type="button" class="day-btn" data-d="5" onclick="toggleDay(this)">Fri</button>
+      <button type="button" class="day-btn" data-d="6" onclick="toggleDay(this)">Sat</button>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:16px" id="dayCount">Select at least 1 day 请至少选择一天</div>
-    <button class="btn btn-primary" onclick="finishOnboard()" id="onboardBtn" style="width:100%;padding:14px;border-radius:13px" disabled>Let's Start! 开始学习！🚀</button>
+    <button type="button" class="btn btn-primary" onclick="finishOnboard()" id="onboardBtn" style="width:100%;padding:14px;border-radius:13px" disabled>Let's Start! 开始学习！🚀</button>
     <div style="font-size:11px;color:var(--muted);margin-top:10px">You can change this anytime in Settings 随时在设置中更改</div>
   </div>
 </div>
@@ -448,13 +448,13 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:10px;p
     <div style="font-weight:800;color:var(--g1);margin-bottom:8px;font-size:15px">📅 Study Days 学习日</div>
     <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Choose which days you study each week 选择每周学习日</div>
     <div class="day-picker" id="settingsDayPicker">
-      <button class="day-btn" data-d="0">Sun</button>
-      <button class="day-btn" data-d="1">Mon</button>
-      <button class="day-btn" data-d="2">Tue</button>
-      <button class="day-btn" data-d="3">Wed</button>
-      <button class="day-btn" data-d="4">Thu</button>
-      <button class="day-btn" data-d="5">Fri</button>
-      <button class="day-btn" data-d="6">Sat</button>
+      <button type="button" class="day-btn" data-d="0" onclick="toggleSettingsDay(this)">Sun</button>
+      <button type="button" class="day-btn" data-d="1" onclick="toggleSettingsDay(this)">Mon</button>
+      <button type="button" class="day-btn" data-d="2" onclick="toggleSettingsDay(this)">Tue</button>
+      <button type="button" class="day-btn" data-d="3" onclick="toggleSettingsDay(this)">Wed</button>
+      <button type="button" class="day-btn" data-d="4" onclick="toggleSettingsDay(this)">Thu</button>
+      <button type="button" class="day-btn" data-d="5" onclick="toggleSettingsDay(this)">Fri</button>
+      <button type="button" class="day-btn" data-d="6" onclick="toggleSettingsDay(this)">Sat</button>
     </div>
     <button class="btn btn-primary" onclick="saveStudyDays()" style="width:100%;padding:13px;border-radius:13px;margin-top:8px">Save Schedule 保存时间表</button>
   </div>
@@ -615,16 +615,22 @@ function isUnlocked(id){return S.unlockedLevels.indexOf(id)>=0;}
 
 // ── ONBOARDING ──
 function initOnboard(){
-  if(S.onboardDone){document.getElementById("onboardWrap").classList.add("hidden");return;}
-  document.getElementById("onboardWrap").classList.remove("hidden");
-  document.querySelectorAll("#dayPicker .day-btn").forEach(function(btn){
-    btn.onclick=function(){
-      btn.classList.toggle("sel");
-      var sel=document.querySelectorAll("#dayPicker .day-btn.sel").length;
-      document.getElementById("dayCount").textContent=sel+" day"+(sel!==1?"s":"")+" selected 已选择"+sel+"天";
-      document.getElementById("onboardBtn").disabled=sel===0;
-    };
-  });
+  if(S.onboardDone){
+    document.getElementById("onboardWrap").classList.add("hidden");
+  } else {
+    document.getElementById("onboardWrap").classList.remove("hidden");
+  }
+}
+
+function toggleDay(btn){
+  btn.classList.toggle("sel");
+  var sel=document.querySelectorAll("#dayPicker .day-btn.sel").length;
+  document.getElementById("dayCount").textContent=sel+" day"+(sel!==1?"s":"")+" selected 已选择"+sel+"天";
+  document.getElementById("onboardBtn").disabled=sel===0;
+}
+
+function toggleSettingsDay(btn){
+  btn.classList.toggle("sel");
 }
 function finishOnboard(){
   var days=[];
@@ -1178,27 +1184,28 @@ function renderCalendar(){
 
     var cls="cal-cell";
     var icon="";
-    var onclick="";
+    var clickFn="";
 
     if(isToday){
       cls+=" today";
-      icon=isStudyDay?"📅":"";
-    } else if(beforeStart||(!isStudyDay&&!status)){
+      if(isStudyDay){icon="📅";clickFn="goToToday()";}
+    } else if(beforeStart){
+      cls+=" rest";
+    } else if(!isStudyDay&&!status){
       cls+=" rest";
     } else if(isFuture){
       cls+=" future";
-      if(isStudyDay)icon="📅";
+      if(isStudyDay){icon="📅";clickFn="showFutureDay('"+ds+"')";}
     } else if(status==="done"){
-      cls+=" done";icon="✓";
+      cls+=" done";icon="✓";clickFn="showDoneDay('"+ds+"')";
     } else if(isStudyDay){
-      cls+=" missed";
-      onclick='onclick="goToMissed(\''+ds+'\')"';
-      icon="!";
+      cls+=" missed";icon="!";clickFn="goToMissed('"+ds+"')";
     } else {
       cls+=" rest";
     }
 
-    cells+='<div class="cal-day-col"><div class="cal-day-name'+(isStudyDay?" study-day-name":"")+'">'+dayLabels[dayOfWeek]+'</div><div class="'+cls+'" '+onclick+'>'+d.getDate()+'<span class="cal-icon">'+icon+'</span></div></div>';
+    var clickAttr=clickFn?'onclick="'+clickFn+'" style="cursor:pointer"':'';
+    cells+='<div class="cal-day-col"><div class="cal-day-name'+(isStudyDay?" study-day-name":"")+'">'+dayLabels[dayOfWeek]+'</div><div class="'+cls+'" '+clickAttr+'>'+d.getDate()+'<span class="cal-icon">'+icon+'</span></div></div>';
   }
 
   var canGoBack=weekStart>weekStartSunday;
@@ -1222,8 +1229,24 @@ function renderCalendar(){
 function calPrev(){calWeekOffset--;renderCalendar();}
 function calNext(){calWeekOffset++;renderCalendar();}
 function goToMissed(ds){
-  switchTab("vocab");
-  showModal("📅","Catch-up lesson! 补课！","Let's complete the missed lesson! 完成这天的课程！",[{label:"Start 开始",fn:hideModal}]);
+  showModal("📅","Catch-up lesson! 补课！ ("+ds+")","You missed this lesson day. Go to the Lesson tab to complete it now!
+这天的课程没完成。去课程标签完成它！",
+    [{label:"Go to Lesson 去课程",fn:function(){hideModal();switchTab("lesson");}},{label:"Later 稍后",fn:hideModal,primary:false}]);
+}
+function goToToday(){
+  showModal("📅","Today's lesson! 今天的课程！","Tap below to start today's lesson.
+点击下方开始今天的课程。",
+    [{label:"Start Lesson 开始课程",fn:function(){hideModal();switchTab("lesson");}},{label:"Later 稍后",fn:hideModal,primary:false}]);
+}
+function showFutureDay(ds){
+  showModal("📅","Upcoming study day 即将到来的学习日",ds+" is a scheduled lesson day. Keep it up!
+"+ds+" 是预定的学习日。继续加油！",
+    [{label:"OK",fn:hideModal}]);
+}
+function showDoneDay(ds){
+  showModal("✅","Lesson completed! 课程完成！","Great job on "+ds+"! You completed that lesson.
+做得好！你完成了那天的课程。",
+    [{label:"OK 好的",fn:hideModal}]);
 }
 
 // ── SETTINGS ──
