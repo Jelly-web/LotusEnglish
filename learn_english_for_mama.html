@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Learn English 学英语 🌿</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--g1:#1a6b3c;--g2:#2d9b5a;--g3:#4cba78;--g4:#7dd4a0;--g5:#c8f0d8;--g6:#e8f8ef;--g7:#f2fbf5;--text:#0d3d22;--muted:#5a8a6e;--red:#d93b3b;--amber:#e0920a;--radius:18px;--shadow:0 4px 20px rgba(26,107,60,0.12)}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--g7);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,var(--g1) 0%,var(--g2) 100%);color:#fff;padding:18px 20px 14px;text-align:center}
+.header h1{font-size:24px;font-weight:800}
+.header p{font-size:13px;opacity:.85;margin-top:2px}
+.level-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:700;margin-top:8px}
+.xp-bar-wrap{background:var(--g1);padding:8px 18px 12px}
+.xp-label{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.8);margin-bottom:5px}
+.xp-track{background:rgba(255,255,255,.2);border-radius:10px;height:9px}
+.xp-fill{background:#a8e6c1;height:9px;border-radius:10px;transition:width .6s}
+.stars-bar{background:var(--g6);padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:14px;border-bottom:1px solid var(--g5);flex-wrap:wrap}
+.star-item{font-size:12px;color:var(--g1);font-weight:700}
+.tabs{display:flex;background:#fff;border-bottom:2px solid var(--g5);overflow-x:auto}
+.tab{flex:1;min-width:56px;padding:10px 4px 8px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;border:none;background:none;color:var(--muted);line-height:1.4;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab.active{color:var(--g1);border-bottom-color:var(--g2);background:var(--g7)}
+.tab-icon{font-size:17px;display:block;margin-bottom:1px}
+.screen{display:none;padding:18px 16px;max-width:640px;margin:0 auto}
+.screen.active{display:block}
+.card{background:#fff;border-radius:var(--radius);padding:22px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section-title{font-size:18px;font-weight:800;color:var(--g1);margin-bottom:3px}
+.section-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+.word-type-badge{display:inline-block;background:var(--g5);color:var(--g1);border-radius:20px;padding:3px 12px;font-size:11px;font-weight:700;margin-bottom:8px}
+.english-word{font-size:40px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:4px}
+.chinese-hint{font-size:22px;color:var(--muted);margin-bottom:6px}
+.example-en{font-size:14px;color:#444;font-style:italic;line-height:1.6}
+.example-zh{font-size:12px;color:#aaa;margin-top:2px}
+.speak-btn{display:flex;align-items:center;gap:8px;background:var(--g5);border:none;border-radius:12px;padding:10px 18px;cursor:pointer;font-size:15px;font-weight:700;color:var(--g1);margin:12px auto 0}
+.speak-btn:hover{background:var(--g4)}
+.mouth-wrap{display:flex;justify-content:center;margin:6px 0 2px}
+.mouth-svg{width:72px;height:50px}
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:16px}
+.option-btn{background:#fff;border:2.5px solid var(--g5);border-radius:13px;padding:14px 8px;font-size:15px;font-weight:700;cursor:pointer;color:var(--text);text-align:center}
+.option-btn:hover:not(:disabled){border-color:var(--g2);background:var(--g6)}
+.option-btn.correct{background:#e6f9ee;border-color:#2e9e5b;color:#0d5c2e}
+.option-btn.wrong{background:#fde8e8;border-color:var(--red);color:#7a1c1c}
+.option-btn:disabled{cursor:default}
+.nav-row{display:flex;gap:9px;margin-top:14px}
+.btn{flex:1;padding:14px;border-radius:13px;border:none;font-size:15px;font-weight:800;cursor:pointer}
+.btn-primary{background:var(--g2);color:#fff}
+.btn-primary:hover{background:var(--g1)}
+.btn-secondary{background:var(--g6);color:var(--g1);border:1.5px solid var(--g4)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-amber{background:var(--amber);color:#fff}
+.feedback{font-size:15px;font-weight:700;padding:12px;border-radius:12px;text-align:center;margin-top:12px}
+.feedback.good{background:#e6f9ee;color:#0d5c2e}
+.feedback.bad{background:#fde8e8;color:#7a1c1c}
+.prog-wrap{background:var(--g6);border-radius:10px;height:8px;margin:8px 0 3px}
+.prog-fill{background:var(--g3);height:8px;border-radius:10px;transition:width .4s}
+.prog-label{font-size:11px;color:var(--muted);text-align:right}
+.build-area{min-height:52px;background:var(--g7);border:2px dashed var(--g4);border-radius:13px;padding:9px 11px;margin:10px 0;display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.words-pool{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:9px}
+.word-chip{background:var(--g2);color:#fff;border-radius:20px;padding:7px 14px;font-size:14px;font-weight:700;cursor:pointer;border:none}
+.word-chip:hover{background:var(--g1)}
+.pool-chip{background:#fff;color:var(--text);border:2px solid var(--g4)}
+.pool-chip:hover{border-color:var(--g2);color:var(--g1)}
+.pool-chip.used{opacity:.25;pointer-events:none}
+.story-text{font-size:18px;line-height:2.1;color:var(--text)}
+.hl{background:var(--g5);border-radius:5px;padding:2px 7px;color:var(--g1);font-weight:800;cursor:pointer;border-bottom:2px solid var(--g3)}
+.hl:hover{background:var(--g4)}
+.story-hint{background:var(--g6);border-radius:13px;padding:12px 16px;margin-top:10px;border-left:4px solid var(--g2)}
+.hint-word{font-size:20px;font-weight:800;color:var(--g1)}
+.hint-zh{font-size:16px;color:var(--muted);margin-top:2px}
+.levels-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.level-card{border-radius:15px;padding:16px 14px;cursor:pointer;border:2.5px solid transparent;transition:all .2s;position:relative;overflow:hidden}
+.level-card.unlocked{background:#fff;border-color:var(--g4);box-shadow:var(--shadow)}
+.level-card.unlocked:hover{border-color:var(--g2);transform:translateY(-2px)}
+.level-card.active-lv{border-color:var(--g1);background:var(--g6)}
+.level-card.locked{background:#f5f5f5;border-color:#ddd;cursor:not-allowed}
+.level-name{font-size:15px;font-weight:800;color:var(--text)}
+.level-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.cp-badge{display:inline-flex;align-items:center;gap:5px;border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;margin-top:6px}
+.cp-passed{background:#e6f9ee;color:#0d5c2e}
+.cp-fail{background:#fde8e8;color:#7a1c1c}
+.cp-pending{background:#fff8e1;color:#b8860b}
+.quiz-q-box{background:var(--g7);border-radius:13px;padding:18px 14px;margin-bottom:16px;font-size:17px;font-weight:800;text-align:center;line-height:1.5;color:var(--text)}
+.quiz-opts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.quiz-opt{background:#fff;border:2.5px solid var(--g5);border-radius:13px;padding:14px 8px;font-size:14px;font-weight:700;cursor:pointer;color:var(--text)}
+.quiz-opt:hover:not(:disabled){border-color:var(--g2);background:var(--g6)}
+.quiz-opt.correct{background:#e6f9ee;border-color:#2e9e5b;color:#0d5c2e}
+.quiz-opt.wrong{background:#fde8e8;border-color:var(--red);color:#7a1c1c}
+.quiz-opt:disabled{cursor:default}
+.cram-card{background:#fff8e1;border:2px solid #ffd54f;border-radius:14px;padding:16px;margin-bottom:12px}
+.cram-rounds{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.cram-dot{width:28px;height:28px;border-radius:50%;border:2px solid var(--g4);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);background:#fff}
+.cram-dot.done{background:var(--g2);border-color:var(--g1);color:#fff}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin:14px 0}
+.stat-card{background:var(--g6);border-radius:13px;padding:14px 8px;text-align:center}
+.stat-num{font-size:28px;font-weight:900;color:var(--g1)}
+.stat-lbl{font-size:10px;color:var(--muted);margin-top:2px;font-weight:600}
+.badge-pill{border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;display:inline-block;margin:4px}
+.badge-pill.earned{background:#fff8e1;color:#b8860b;border:1.5px solid #ffd54f}
+.badge-pill.locked{background:#f0f0f0;color:#aaa;border:1.5px solid #ddd}
+.save-code{font-family:monospace;font-size:11px;background:var(--g7);border-radius:8px;padding:10px;word-break:break-all;color:var(--text);margin:8px 0;max-height:80px;overflow-y:auto;border:1px solid var(--g5)}
+textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:10px;padding:10px;font-size:12px;font-family:monospace;height:80px;resize:none;color:var(--text);background:var(--g7)}
+.cert-wrap{background:#fff;border:8px solid var(--g2);border-radius:20px;padding:36px 28px;text-align:center}
+.cert-title{font-size:26px;font-weight:900;color:var(--g1)}
+.cert-sub{font-size:13px;color:var(--muted);margin:5px 0 18px}
+.cert-name{font-size:30px;font-weight:900;color:var(--text);border-bottom:3px solid var(--g3);display:inline-block;padding:0 20px 6px;margin:10px 0}
+.cert-body{font-size:14px;color:#555;line-height:1.8;margin:14px 0}
+.alert-banner{padding:10px 16px;border-radius:12px;font-size:13px;font-weight:700;margin-bottom:12px;text-align:center}
+.alert-pass{background:#e6f9ee;color:#0d5c2e;border:1.5px solid #a8e6c1}
+.alert-cram{background:#fff8e1;color:#b8860b;border:1.5px solid #ffd54f}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:18px}
+.modal-overlay.hidden{display:none}
+.modal{background:#fff;border-radius:22px;padding:28px 22px;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal h2{font-size:22px;font-weight:900;color:var(--g1);margin-bottom:7px}
+.modal p{font-size:14px;color:var(--muted);margin-bottom:18px;line-height:1.7}
+.modal-btns{display:flex;flex-direction:column;gap:9px}
+@media(max-width:400px){.english-word{font-size:32px}.levels-grid{grid-template-columns:1fr}.stat-grid{grid-template-columns:1fr 1fr}}
+@media print{body>*:not(#printArea){display:none!important}#printArea{display:block!important}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌿 Learn English 学英语</h1>
+  <p>每天进步一点点 · A little better every day</p>
+  <div class="level-badge" id="levelBadge">🎓 Primary 1</div>
+</div>
+<div class="xp-bar-wrap">
+  <div class="xp-label"><span>XP Progress 经验值</span><span id="xpCount">0 / 100 XP</span></div>
+  <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+</div>
+<div class="stars-bar">
+  <span class="star-item">⭐ Today 今天: <span id="todayStars">0</span></span>
+  <span class="star-item">🏅 Total 总共: <span id="totalStars">0</span></span>
+  <span class="star-item">🎯 Stage: <span id="stageLabel">P1</span></span>
+</div>
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('levels')"><span class="tab-icon">🗺️</span>Journey<br>旅程</button>
+  <button class="tab" onclick="switchTab('vocab')"><span class="tab-icon">🔤</span>Words<br>单词</button>
+  <button class="tab" onclick="switchTab('sentence')"><span class="tab-icon">💬</span>Sentences<br>句子</button>
+  <button class="tab" onclick="switchTab('story')"><span class="tab-icon">📖</span>Reading<br>阅读</button>
+  <button class="tab" onclick="switchTab('exam')"><span class="tab-icon">📝</span>Exam<br>考试</button>
+  <button class="tab" id="cramTab" onclick="switchTab('cram')" style="display:none"><span class="tab-icon">🔥</span>Cram<br>补习</button>
+  <button class="tab" onclick="switchTab('progress')"><span class="tab-icon">🏆</span>Progress<br>进度</button>
+  <button class="tab" onclick="switchTab('settings')"><span class="tab-icon">⚙️</span>Settings<br>设置</button>
+</div>
+<div class="screen active" id="screen-levels">
+  <div class="section-title">Your Journey 学习之旅</div>
+  <div class="section-sub">Complete checkpoints to unlock new levels</div>
+  <div id="checkpointStatus"></div>
+  <div class="levels-grid" id="levelsGrid"></div>
+</div>
+<div class="screen" id="screen-vocab">
+  <div class="section-title" id="vocabLevelLabel">Words 单词</div>
+  <div class="section-sub">Tap 🔊 to hear · 点击喇叭听发音</div>
+  <div class="card" style="text-align:center">
+    <div class="word-type-badge" id="vocabType"></div>
+    <div class="english-word" id="vocabWord"></div>
+    <div class="mouth-wrap">
+      <svg class="mouth-svg" viewBox="0 0 80 56"><ellipse cx="40" cy="28" rx="28" ry="18" fill="#ffcc99" stroke="#cc8866" stroke-width="2"/><path id="mouthPath" d="M 18 30 Q 40 38 62 30" stroke="#cc3333" stroke-width="3" fill="none" stroke-linecap="round"/><ellipse id="tongue" cx="40" cy="36" rx="0" ry="0" fill="#e05555"/></svg>
+    </div>
+    <div class="chinese-hint" id="vocabZh"></div>
+    <div class="example-en" id="vocabEg"></div>
+    <div class="example-zh" id="vocabEgZh"></div>
+    <button class="speak-btn" onclick="speakWord()">🔊 Hear it! 听发音</button>
+  </div>
+  <div class="prog-label" id="vocabCounter"></div>
+  <div class="prog-wrap"><div class="prog-fill" id="vocabBar"></div></div>
+  <div class="options-grid" id="vocabOptions"></div>
+  <div class="feedback" id="vocabFb" style="display:none"></div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="prevVocab()">← Back</button>
+    <button class="btn btn-primary" onclick="nextVocab()">Next →</button>
+  </div>
+</div>
+<div class="screen" id="screen-sentence">
+  <div class="section-title">Build Sentences 造句子</div>
+  <div class="section-sub">Arrange words in the right order 把词语排列成正确的句子</div>
+  <div class="card">
+    <div style="font-size:17px;font-weight:700;color:var(--g1);margin-bottom:4px" id="sentZh"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Tap to add 点击添加</div>
+    <div class="words-pool" id="wordPool"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:5px">Your sentence 你的句子:</div>
+    <div class="build-area" id="buildArea"></div>
+    <div class="feedback" id="sentFb" style="display:none"></div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="clearSent()">Clear 清除</button>
+      <button class="btn btn-primary" onclick="checkSent()">Check ✓</button>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-secondary" onclick="prevSent()">← Back</button>
+      <button class="btn btn-primary" onclick="nextSent()">Next →</button>
+    </div>
+  </div>
+</div>
+<div class="screen" id="screen-story">
+  <div class="section-title">Reading 阅读</div>
+  <div class="section-sub">Tap green words to see meaning 点击绿色词查看意思</div>
+  <div class="card" id="storyCard"></div>
+  <div class="story-hint" id="storyHint" style="display:none">
+    <div class="hint-word" id="hintWord"></div>
+    <div class="hint-zh" id="hintZh"></div>
+    <button class="speak-btn" style="margin:8px auto 0" onclick="speakHintWord()">🔊 Hear it!</button>
+  </div>
+  <div class="nav-row">
+    <button class="btn btn-secondary" onclick="prevStory()">← Previous</button>
+    <button class="btn btn-primary" onclick="nextStory()">Next Story →</button>
+  </div>
+</div>
+<div class="screen" id="screen-exam">
+  <div class="section-title">Checkpoint Exam 检查点考试</div>
+  <div class="section-sub" id="examSub"></div>
+  <div id="examBody"></div>
+</div>
+<div class="screen" id="screen-cram">
+  <div class="section-title">Cram Practice 补习练习 🔥</div>
+  <div class="section-sub">Drill weak spots before retake 针对弱点练习</div>
+  <div id="cramBody"></div>
+</div>
+<div class="screen" id="screen-progress">
+  <div class="section-title">My Progress 我的进度 🏆</div>
+  <div class="section-sub">Keep going, you are amazing! 继续加油！</div>
+  <div class="card">
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" id="pStage">P1</div><div class="stat-lbl">Current Stage</div></div>
+      <div class="stat-card"><div class="stat-num" id="pStars">0</div><div class="stat-lbl">Total Stars 星星</div></div>
+      <div class="stat-card"><div class="stat-num" id="pBest">—</div><div class="stat-lbl">Best Exam 最高分</div></div>
+    </div>
+  </div>
+  <div class="section-title" style="margin-top:6px">Checkpoint History 检查点记录</div>
+  <div id="cpHistory" style="margin-top:10px"></div>
+  <div class="section-title" style="margin-top:14px">Badges 徽章</div>
+  <div id="badgesWrap" style="margin-top:8px"></div>
+  <div id="certSection" style="margin-top:14px;display:none">
+    <div class="section-title">Certificates 证书</div>
+    <div id="certButtons" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:9px"></div>
+  </div>
+</div>
+<div class="screen" id="screen-settings">
+  <div class="section-title">Settings 设置</div>
+  <div class="section-sub">Name, save code, reset 名字、存档码、重置</div>
+  <div class="card">
+    <div style="font-weight:800;color:var(--g1);margin-bottom:8px;font-size:15px">Your Name 你的名字</div>
+    <input id="nameInput" type="text" placeholder="Enter your name 输入名字" style="width:100%;border:2px solid var(--g4);border-radius:10px;padding:11px 14px;font-size:15px;color:var(--text);background:var(--g7);margin-bottom:10px">
+    <button class="btn btn-primary" onclick="saveName()" style="width:100%;padding:13px;border-radius:13px">Save Name 保存名字</button>
+  </div>
+  <div class="card">
+    <div style="font-weight:800;color:var(--g1);margin-bottom:6px;font-size:15px">📤 Copy Save Code 复制存档码</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Copy and WhatsApp to yourself. Paste on another device to sync. 复制发给自己，在另一设备粘贴同步。</div>
+    <div class="save-code" id="saveCodeBox">—</div>
+    <button class="btn btn-primary" onclick="copySaveCode()" style="width:100%;padding:13px;border-radius:13px">📋 Copy Code 复制</button>
+    <div class="feedback good" id="copyFb" style="display:none;margin-top:10px">✅ Copied! Paste on your other device. 已复制！</div>
+  </div>
+  <div class="card">
+    <div style="font-weight:800;color:var(--g1);margin-bottom:6px;font-size:15px">📥 Paste Save Code 粘贴存档码</div>
+    <textarea class="import-box" id="importBox" placeholder="Paste code here 在这里粘贴..."></textarea>
+    <button class="btn btn-amber" onclick="importSaveCode()" style="width:100%;padding:13px;border-radius:13px;margin-top:10px">📥 Load Progress 载入进度</button>
+    <div class="feedback" id="importFb" style="display:none;margin-top:10px"></div>
+  </div>
+  <div class="card" style="border:1.5px solid #f5aaaa">
+    <div style="font-weight:800;color:var(--red);margin-bottom:6px;font-size:15px">⚠️ Reset Everything 重置所有</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:12px">Erase ALL progress. 清除所有进度。</div>
+    <button class="btn btn-danger" onclick="confirmReset()" style="width:100%;padding:13px;border-radius:13px">🗑️ Reset 重置</button>
+  </div>
+</div>
+<div id="printArea" style="display:none"></div>
+<div class="modal-overlay hidden" id="modalOverlay">
+  <div class="modal">
+    <div style="font-size:52px;margin-bottom:8px" id="modalEmoji">🎉</div>
+    <h2 id="modalTitle"></h2>
+    <p id="modalMsg"></p>
+    <div class="modal-btns" id="modalBtns"></div>
+  </div>
+</div>
+<script>
+const CUR=[{"id": "p1", "name": "Primary 1", "nameCh": "小学一年级", "emoji": "🌱", "stage": "P1", "vocab": [{"w": "Hello", "zh": "你好", "type": "Greeting", "eg": "Hello! My name is Mama.", "egZh": "你好！我叫妈妈。"}, {"w": "Goodbye", "zh": "再见", "type": "Greeting", "eg": "Goodbye! See you tomorrow.", "egZh": "再见！明天见。"}, {"w": "Yes", "zh": "是的", "type": "Answer", "eg": "Yes, I understand.", "egZh": "是的，我明白。"}, {"w": "No", "zh": "不", "type": "Answer", "eg": "No, thank you.", "egZh": "不，谢谢。"}, {"w": "Please", "zh": "请", "type": "Polite", "eg": "Please help me.", "egZh": "请帮帮我。"}, {"w": "Thank you", "zh": "谢谢", "type": "Polite", "eg": "Thank you very much!", "egZh": "非常感谢！"}, {"w": "Sorry", "zh": "对不起", "type": "Polite", "eg": "I am so sorry.", "egZh": "我非常抱歉。"}, {"w": "Good", "zh": "好", "type": "Adjective", "eg": "This is very good!", "egZh": "这个非常好！"}], "sentences": [{"en": ["My", "name", "is", "Mama."], "zh": "我的名字是妈妈。"}, {"en": ["I", "am", "happy."], "zh": "我很快乐。"}, {"en": ["Thank", "you", "very", "much!"], "zh": "非常感谢！"}], "stories": [{"title": "Hello, Friend! 你好，朋友！", "text": "My name is [Lily]. I am [eight] years old. I have a [cat] named Mimi. My cat is [white] and [fluffy]. I [love] my cat very much.", "words": {"Lily": "莉莉（名字）", "eight": "八岁", "cat": "猫", "white": "白色", "fluffy": "毛茸茸", "love": "爱"}}]}, {"id": "p2", "name": "Primary 2", "nameCh": "小学二年级", "emoji": "🌿", "stage": "P2", "vocab": [{"w": "Eat", "zh": "吃", "type": "Verb", "eg": "I eat rice every day.", "egZh": "我每天吃米饭。"}, {"w": "Drink", "zh": "喝", "type": "Verb", "eg": "I drink water in the morning.", "egZh": "我早上喝水。"}, {"w": "Sleep", "zh": "睡觉", "type": "Verb", "eg": "I sleep at ten pm.", "egZh": "我晚上十点睡觉。"}, {"w": "Walk", "zh": "走路", "type": "Verb", "eg": "I walk to the park.", "egZh": "我走路去公园。"}, {"w": "Happy", "zh": "快乐", "type": "Adjective", "eg": "I feel happy today!", "egZh": "我今天感到快乐！"}, {"w": "Sad", "zh": "伤心", "type": "Adjective", "eg": "She looks very sad.", "egZh": "她看起来很伤心。"}, {"w": "Big", "zh": "大", "type": "Adjective", "eg": "That is a big tree.", "egZh": "那是一棵大树。"}, {"w": "Small", "zh": "小", "type": "Adjective", "eg": "I have a small bag.", "egZh": "我有一个小袋子。"}], "sentences": [{"en": ["I", "eat", "rice", "every", "day."], "zh": "我每天吃米饭。"}, {"en": ["She", "is", "very", "happy."], "zh": "她非常快乐。"}, {"en": ["We", "walk", "to", "school", "together."], "zh": "我们一起走路上学。"}], "stories": [{"title": "My Morning 我的早晨", "text": "Every [morning], I [wake] up at seven. I [wash] my face and [brush] my teeth. Then I [eat] breakfast with my [family]. We have [rice] and [soup]. It is a good [start] to the day!", "words": {"morning": "早晨", "wake": "起床", "wash": "洗", "brush": "刷", "eat": "吃", "family": "家人", "rice": "米饭", "soup": "汤", "start": "开始"}}]}, {"id": "p3", "name": "Primary 3", "nameCh": "小学三年级", "emoji": "🌳", "stage": "P3", "vocab": [{"w": "Beautiful", "zh": "美丽", "type": "Adjective", "eg": "What a beautiful flower!", "egZh": "多美丽的花！"}, {"w": "Family", "zh": "家人", "type": "Noun", "eg": "I love my family.", "egZh": "我爱我的家人。"}, {"w": "School", "zh": "学校", "type": "Noun", "eg": "I go to school every day.", "egZh": "我每天上学。"}, {"w": "Friend", "zh": "朋友", "type": "Noun", "eg": "She is my best friend.", "egZh": "她是我最好的朋友。"}, {"w": "Learn", "zh": "学习", "type": "Verb", "eg": "I want to learn English.", "egZh": "我想学英语。"}, {"w": "Read", "zh": "读", "type": "Verb", "eg": "I love to read books.", "egZh": "我喜欢读书。"}, {"w": "Write", "zh": "写", "type": "Verb", "eg": "Please write your name.", "egZh": "请写下你的名字。"}, {"w": "Play", "zh": "玩", "type": "Verb", "eg": "Children love to play.", "egZh": "孩子们喜欢玩耍。"}], "sentences": [{"en": ["She", "is", "my", "best", "friend."], "zh": "她是我最好的朋友。"}, {"en": ["I", "want", "to", "learn", "English."], "zh": "我想学英语。"}, {"en": ["We", "read", "books", "at", "school."], "zh": "我们在学校读书。"}], "stories": [{"title": "My Best Friend 我最好的朋友", "text": "My [best] friend is [called] Amy. We [met] in school. She is [kind] and [funny]. We [play] together every day. We [share] our food and [help] each other. A good [friend] is very [important].", "words": {"best": "最好的", "called": "叫做", "met": "认识", "kind": "善良", "funny": "有趣", "play": "玩耍", "share": "分享", "help": "帮助", "friend": "朋友", "important": "重要"}}]}, {"id": "p4", "name": "Primary 4", "nameCh": "小学四年级", "emoji": "🍀", "stage": "P4", "vocab": [{"w": "Market", "zh": "市场", "type": "Noun", "eg": "I go to the market every Saturday.", "egZh": "我每周六去市场。"}, {"w": "Cook", "zh": "烹饪", "type": "Verb", "eg": "My mother loves to cook.", "egZh": "我妈妈喜欢烹饪。"}, {"w": "Delicious", "zh": "美味", "type": "Adjective", "eg": "This curry is delicious!", "egZh": "这咖喱非常美味！"}, {"w": "Help", "zh": "帮助", "type": "Verb", "eg": "Can you help me please?", "egZh": "你能帮帮我吗？"}, {"w": "Tired", "zh": "累", "type": "Adjective", "eg": "I feel very tired after work.", "egZh": "工作后我感到很累。"}, {"w": "Strong", "zh": "强壮", "type": "Adjective", "eg": "She is a very strong woman.", "egZh": "她是一个非常强壮的女性。"}, {"w": "Proud", "zh": "骄傲", "type": "Adjective", "eg": "I am proud of my daughter.", "egZh": "我为我的女儿感到骄傲。"}, {"w": "Together", "zh": "一起", "type": "Adverb", "eg": "Let us do it together!", "egZh": "让我们一起做！"}], "sentences": [{"en": ["Can", "you", "help", "me", "please?"], "zh": "你能帮帮我吗？"}, {"en": ["I", "am", "proud", "of", "my", "family."], "zh": "我为我的家人感到骄傲。"}, {"en": ["The", "food", "is", "very", "delicious!"], "zh": "这食物非常美味！"}], "stories": [{"title": "A Trip to the Market 去市场", "text": "Every [Saturday], Mama goes to the [market]. She [buys] fresh [vegetables] and [fish]. The [stall] holder is very [friendly]. Mama [chooses] the best [ingredients] for dinner. She [cooks] a [delicious] meal for the whole [family].", "words": {"Saturday": "星期六", "market": "菜市场", "buys": "购买", "vegetables": "蔬菜", "fish": "鱼", "stall": "摊位", "friendly": "友善", "chooses": "挑选", "ingredients": "食材", "cooks": "烹饪", "delicious": "美味", "family": "家人"}}]}, {"id": "p5", "name": "Primary 5", "nameCh": "小学五年级", "emoji": "🌸", "stage": "P5", "vocab": [{"w": "Describe", "zh": "描述", "type": "Verb", "eg": "Can you describe the picture?", "egZh": "你能描述这幅画吗？"}, {"w": "Explain", "zh": "解释", "type": "Verb", "eg": "Please explain this to me.", "egZh": "请向我解释这个。"}, {"w": "Opinion", "zh": "意见", "type": "Noun", "eg": "In my opinion, this is right.", "egZh": "在我看来，这是对的。"}, {"w": "Agree", "zh": "同意", "type": "Verb", "eg": "I agree with you completely.", "egZh": "我完全同意你的观点。"}, {"w": "Suggest", "zh": "建议", "type": "Verb", "eg": "I suggest we try again.", "egZh": "我建议我们再试一次。"}, {"w": "Important", "zh": "重要", "type": "Adjective", "eg": "English is very important.", "egZh": "英语非常重要。"}, {"w": "Improve", "zh": "改善", "type": "Verb", "eg": "I want to improve my English.", "egZh": "我想改善我的英语。"}, {"w": "Practise", "zh": "练习", "type": "Verb", "eg": "I practise English every day.", "egZh": "我每天练习英语。"}], "sentences": [{"en": ["In", "my", "opinion,", "this", "is", "correct."], "zh": "在我看来，这是正确的。"}, {"en": ["I", "agree", "with", "you", "completely."], "zh": "我完全同意你的观点。"}, {"en": ["Please", "explain", "this", "to", "me."], "zh": "请向我解释这个。"}], "stories": [{"title": "Why I Learn English 为什么我学英语", "text": "English is an [important] language. People use it all over the [world]. When I [improve] my English, I can [communicate] with more people. I can [read] signs and [understand] the doctor. I [believe] it is never too [late] to learn.", "words": {"important": "重要", "world": "世界", "improve": "改善", "communicate": "沟通", "read": "阅读", "understand": "理解", "believe": "相信", "late": "晚"}}]}, {"id": "p6", "name": "Primary 6", "nameCh": "小学六年级", "emoji": "🎓", "stage": "P6", "vocab": [{"w": "Responsible", "zh": "负责任", "type": "Adjective", "eg": "She is a very responsible person.", "egZh": "她是一个非常负责任的人。"}, {"w": "Confident", "zh": "自信", "type": "Adjective", "eg": "Be confident when you speak.", "egZh": "说话时要自信。"}, {"w": "Achieve", "zh": "实现", "type": "Verb", "eg": "You can achieve your goals.", "egZh": "你可以实现你的目标。"}, {"w": "Challenge", "zh": "挑战", "type": "Noun", "eg": "Learning English is a challenge.", "egZh": "学英语是一个挑战。"}, {"w": "Patient", "zh": "耐心", "type": "Adjective", "eg": "Be patient, you will succeed.", "egZh": "耐心点，你会成功的。"}, {"w": "Effort", "zh": "努力", "type": "Noun", "eg": "You put in so much effort!", "egZh": "你付出了这么多努力！"}, {"w": "Succeed", "zh": "成功", "type": "Verb", "eg": "You will succeed if you try.", "egZh": "如果你努力，你就会成功。"}, {"w": "Courage", "zh": "勇气", "type": "Noun", "eg": "She has great courage.", "egZh": "她有很大的勇气。"}], "sentences": [{"en": ["You", "can", "achieve", "your", "goals."], "zh": "你可以实现你的目标。"}, {"en": ["Be", "patient", "and", "you", "will", "succeed."], "zh": "耐心点，你就会成功。"}, {"en": ["She", "has", "great", "courage", "and", "effort."], "zh": "她有很大的勇气和努力。"}], "stories": [{"title": "Never Give Up 永不放弃", "text": "Learning something new is a [challenge]. Sometimes I feel [confused]. But I am [patient] with myself. I put in great [effort] every day. My [confidence] grows each time I [practise]. My family [encourages] me. I know I will [succeed]. Never give up!", "words": {"challenge": "挑战", "confused": "困惑", "patient": "耐心", "effort": "努力", "confidence": "自信", "practise": "练习", "encourages": "鼓励", "succeed": "成功"}}]}, {"id": "s1", "name": "Secondary 1", "nameCh": "中学一年级", "emoji": "📚", "stage": "S1", "vocab": [{"w": "Environment", "zh": "环境", "type": "Noun", "eg": "We must protect the environment.", "egZh": "我们必须保护环境。"}, {"w": "Community", "zh": "社区", "type": "Noun", "eg": "I love my community.", "egZh": "我爱我的社区。"}, {"w": "Communicate", "zh": "沟通", "type": "Verb", "eg": "We communicate in English here.", "egZh": "我们在这里用英语沟通。"}, {"w": "Opportunity", "zh": "机会", "type": "Noun", "eg": "This is a great opportunity!", "egZh": "这是一个很好的机会！"}, {"w": "Relationship", "zh": "关系", "type": "Noun", "eg": "We have a good relationship.", "egZh": "我们关系很好。"}, {"w": "Participate", "zh": "参与", "type": "Verb", "eg": "Please participate actively.", "egZh": "请积极参与。"}, {"w": "Respect", "zh": "尊重", "type": "Verb", "eg": "We must respect each other.", "egZh": "我们必须互相尊重。"}, {"w": "Culture", "zh": "文化", "type": "Noun", "eg": "Singapore has many cultures.", "egZh": "新加坡有很多文化。"}], "sentences": [{"en": ["We", "must", "protect", "the", "environment."], "zh": "我们必须保护环境。"}, {"en": ["This", "is", "a", "great", "opportunity", "for", "me."], "zh": "这对我来说是个很好的机会。"}, {"en": ["We", "must", "respect", "each", "other."], "zh": "我们必须互相尊重。"}], "stories": [{"title": "Our Neighbourhood 我们的邻里", "text": "I live in a wonderful [neighbourhood]. People from many [different] cultures live here. We [respect] each other and [help] when needed. There are [parks] and [markets] nearby. The [community] keeps it [clean] and [safe]. I am [proud] to call this my [home].", "words": {"neighbourhood": "邻里", "different": "不同", "respect": "尊重", "help": "帮助", "parks": "公园", "markets": "市场", "community": "社区", "clean": "清洁", "safe": "安全", "proud": "骄傲", "home": "家"}}]}, {"id": "s2", "name": "Secondary 2", "nameCh": "中学二年级", "emoji": "🔬", "stage": "S2", "vocab": [{"w": "Technology", "zh": "技术", "type": "Noun", "eg": "Technology changes our lives.", "egZh": "技术改变了我们的生活。"}, {"w": "Influence", "zh": "影响", "type": "Verb", "eg": "Music can influence our mood.", "egZh": "音乐能影响我们的情绪。"}, {"w": "Consequence", "zh": "后果", "type": "Noun", "eg": "Think about the consequences!", "egZh": "想想后果！"}, {"w": "Perspective", "zh": "观点", "type": "Noun", "eg": "From my perspective, this is fair.", "egZh": "从我的角度来看，这是公平的。"}, {"w": "Significant", "zh": "重要的", "type": "Adjective", "eg": "This is a significant achievement.", "egZh": "这是一个重大成就。"}, {"w": "Analyse", "zh": "分析", "type": "Verb", "eg": "Let us analyse the problem.", "egZh": "让我们分析这个问题。"}, {"w": "Conclusion", "zh": "结论", "type": "Noun", "eg": "What is your conclusion?", "egZh": "你的结论是什么？"}, {"w": "Evidence", "zh": "证据", "type": "Noun", "eg": "We need evidence to prove this.", "egZh": "我们需要证据来证明这一点。"}], "sentences": [{"en": ["From", "my", "perspective,", "this", "is", "correct."], "zh": "从我的角度来看，这是正确的。"}, {"en": ["Technology", "has", "changed", "our", "lives", "greatly."], "zh": "技术已经极大地改变了我们的生活。"}, {"en": ["We", "need", "evidence", "to", "support", "our", "conclusion."], "zh": "我们需要证据来支持我们的结论。"}], "stories": [{"title": "Technology Today 现代科技", "text": "[Technology] has changed the way we [communicate]. We can video-call [relatives] in other countries. We [shop] online and get [deliveries] at our door. However, we must use technology with [caution]. Too much [screen] time can be [harmful]. The key is to find a [balance].", "words": {"Technology": "科技", "communicate": "沟通", "relatives": "亲人", "shop": "购物", "deliveries": "快递", "caution": "谨慎", "screen": "屏幕", "harmful": "有害", "balance": "平衡"}}]}, {"id": "s3", "name": "Secondary 3", "nameCh": "中学三年级", "emoji": "🌐", "stage": "S3", "vocab": [{"w": "Sustainability", "zh": "可持续性", "type": "Noun", "eg": "Sustainability is key for our future.", "egZh": "可持续性是我们未来的关键。"}, {"w": "Collaborate", "zh": "合作", "type": "Verb", "eg": "We must collaborate to solve this.", "egZh": "我们必须合作来解决这个问题。"}, {"w": "Resilient", "zh": "有韧性", "type": "Adjective", "eg": "She is incredibly resilient.", "egZh": "她非常有韧性。"}, {"w": "Evaluate", "zh": "评估", "type": "Verb", "eg": "We need to evaluate the risks.", "egZh": "我们需要评估风险。"}, {"w": "Advocate", "zh": "倡导", "type": "Verb", "eg": "I advocate for lifelong learning.", "egZh": "我倡导终身学习。"}, {"w": "Empathy", "zh": "同理心", "type": "Noun", "eg": "Show empathy towards others.", "egZh": "对他人表现出同理心。"}, {"w": "Initiative", "zh": "主动性", "type": "Noun", "eg": "Take the initiative and start!", "egZh": "主动出击，开始吧！"}, {"w": "Articulate", "zh": "清晰表达", "type": "Verb", "eg": "Please articulate your thoughts clearly.", "egZh": "请清晰地表达你的想法。"}], "sentences": [{"en": ["We", "must", "collaborate", "to", "solve", "this", "problem."], "zh": "我们必须合作来解决这个问题。"}, {"en": ["Show", "empathy", "and", "kindness", "to", "others."], "zh": "对他人表现出同理心和善意。"}, {"en": ["Take", "the", "initiative", "and", "start", "learning", "today."], "zh": "主动出击，今天就开始学习。"}], "stories": [{"title": "The Strength of a Woman 女性的力量", "text": "A [resilient] woman never gives up. She [collaborates] with others and [advocates] for what is right. She [articulates] her thoughts with [confidence]. She shows [empathy] to those who are struggling. She [evaluates] challenges as [opportunities] to grow. This [courage] inspires everyone.", "words": {"resilient": "有韧性", "collaborates": "合作", "advocates": "倡导", "articulates": "清晰表达", "confidence": "自信", "empathy": "同理心", "evaluates": "评估", "opportunities": "机会", "courage": "勇气"}}]}, {"id": "s4", "name": "Secondary 4", "nameCh": "中学四年级", "emoji": "🏆", "stage": "S4", "vocab": [{"w": "Perseverance", "zh": "毅力", "type": "Noun", "eg": "Success comes from perseverance.", "egZh": "成功来自毅力。"}, {"w": "Integrity", "zh": "诚实正直", "type": "Noun", "eg": "She always acts with integrity.", "egZh": "她总是以诚实正直行事。"}, {"w": "Compassion", "zh": "同情心", "type": "Noun", "eg": "She shows great compassion.", "egZh": "她展现出极大的同情心。"}, {"w": "Aspiration", "zh": "抱负", "type": "Noun", "eg": "What are your aspirations in life?", "egZh": "你生活中的抱负是什么？"}, {"w": "Dedication", "zh": "奉献", "type": "Noun", "eg": "Her dedication is admirable.", "egZh": "她的奉献精神令人钦佩。"}, {"w": "Inspiration", "zh": "灵感", "type": "Noun", "eg": "You are an inspiration to me.", "egZh": "你是我的灵感来源。"}, {"w": "Legacy", "zh": "遗产", "type": "Noun", "eg": "What legacy do you want to leave?", "egZh": "你想留下什么遗产？"}, {"w": "Eloquent", "zh": "口才好", "type": "Adjective", "eg": "She gave an eloquent speech.", "egZh": "她发表了一篇口才好的演讲。"}], "sentences": [{"en": ["Success", "comes", "from", "perseverance", "and", "dedication."], "zh": "成功来自毅力和奉献。"}, {"en": ["You", "are", "an", "inspiration", "to", "everyone", "around", "you."], "zh": "你是周围每个人的灵感来源。"}, {"en": ["She", "always", "acts", "with", "integrity", "and", "compassion."], "zh": "她总是以诚实正直和同情心行事。"}], "stories": [{"title": "A Letter to Mama 给妈妈的信", "text": "Dear Mama, you are the most [dedicated] and [compassionate] person I know. Your [perseverance] in learning English [inspires] me every day. You show great [integrity] in everything you do. Your [aspiration] to grow never stops. The [legacy] you leave is one of [courage] and love. I am so [proud] of you!", "words": {"dedicated": "投入", "compassionate": "富有同情心", "perseverance": "毅力", "inspires": "激励", "integrity": "正直", "aspiration": "抱负", "legacy": "遗产", "courage": "勇气", "proud": "骄傲"}}]}];
+
+const CHECKPOINTS=[
+  {id:"cp1",label:"Checkpoint 1",after:"p1",covers:["p1"],passMin:70,gate:null,pairWith:"cp2"},
+  {id:"cp2",label:"Checkpoint 2",after:"p2",covers:["p1","p2"],passMin:70,gate:"cp1",unlocks:"p3",pairWith:"cp1"},
+  {id:"cp3",label:"Checkpoint 3",after:"p3",covers:["p2","p3"],passMin:70,gate:null,pairWith:"cp4"},
+  {id:"cp4",label:"Checkpoint 4",after:"p4",covers:["p3","p4"],passMin:70,gate:"cp3",unlocks:"p5",pairWith:"cp3"},
+  {id:"cp5",label:"Checkpoint 5",after:"p5",covers:["p4","p5"],passMin:70,gate:null,pairWith:"cp6"},
+  {id:"cp6",label:"Checkpoint 6",after:"p6",covers:["p5","p6"],passMin:70,gate:"cp5",pairWith:"cp5"},
+  {id:"psle",label:"PSLE Equivalent",after:"p6",covers:["p1","p2","p3","p4","p5","p6"],passMin:70,gate:"cp6",unlocks:"s1",isMajor:true,certId:"psle"},
+  {id:"cp7",label:"Checkpoint 7",after:"s1",covers:["s1"],passMin:65,gate:null,pairWith:"cp8"},
+  {id:"cp8",label:"Checkpoint 8",after:"s2",covers:["s1","s2"],passMin:65,gate:"cp7",unlocks:"s3",pairWith:"cp7"},
+  {id:"cp9",label:"Checkpoint 9",after:"s3",covers:["s2","s3"],passMin:65,gate:null,pairWith:"cp10"},
+  {id:"cp10",label:"Checkpoint 10",after:"s4",covers:["s3","s4"],passMin:65,gate:"cp9",pairWith:"cp9"},
+  {id:"olevel",label:"O-Level Equivalent",after:"s4",covers:["s1","s2","s3","s4"],passMin:65,gate:"cp10",isMajor:true,certId:"olevel"},
+];
+
+const SK="mama_english_v4";
+let S={name:"",currentLevelId:"p1",unlockedLevels:["p1","p2"],completedCPs:{},failedCPs:{},
+       totalStars:0,todayStars:0,xp:0,vocabIdx:0,sentIdx:0,storyIdx:0,vocabDone:{},sentDone:0,graduate:false};
+
+function loadS(){try{const r=localStorage.getItem(SK);if(r)S=Object.assign({},S,JSON.parse(r));}catch(e){}}
+function saveS(){try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}}
+function addStar(n){S.totalStars+=n;S.todayStars+=n;S.xp+=n*10;saveS();updateHeader();}
+function updateHeader(){
+  const lv=getCurLevel();
+  document.getElementById("levelBadge").textContent="🎓 "+lv.name;
+  document.getElementById("stageLabel").textContent=lv.stage;
+  document.getElementById("todayStars").textContent=S.todayStars;
+  document.getElementById("totalStars").textContent=S.totalStars;
+  const xpN=S.xp%100;
+  document.getElementById("xpCount").textContent=xpN+" / 100 XP";
+  document.getElementById("xpFill").style.width=xpN+"%";
+  document.getElementById("cramTab").style.display=Object.keys(S.failedCPs).length?"":"none";
+}
+function getCurLevel(){return CUR.find(function(l){return l.id===S.currentLevelId;})||CUR[0];}
+function getLevelById(id){return CUR.find(function(l){return l.id===id;});}
+function getCPById(id){return CHECKPOINTS.find(function(c){return c.id===id;});}
+function isUnlocked(id){return S.unlockedLevels.indexOf(id)>=0;}
+
+function switchTab(tab){
+  document.querySelectorAll(".tab").forEach(function(t){t.classList.remove("active");});
+  var tabs=["levels","vocab","sentence","story","exam","cram","progress","settings"];
+  var idx=tabs.indexOf(tab);
+  if(idx>=0)document.querySelectorAll(".tab")[idx].classList.add("active");
+  document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
+  document.getElementById("screen-"+tab).classList.add("active");
+  if(tab==="levels")renderLevels();
+  if(tab==="vocab")renderVocab();
+  if(tab==="sentence")renderSent();
+  if(tab==="story")renderStory();
+  if(tab==="exam")renderExamHome();
+  if(tab==="cram")renderCram();
+  if(tab==="progress")renderProgress();
+  if(tab==="settings")renderSettings();
+}
+
+function getNextCP(){
+  for(var i=0;i<CHECKPOINTS.length;i++){
+    var cp=CHECKPOINTS[i];
+    if(isUnlocked(cp.after)&&!(S.completedCPs[cp.id]&&S.completedCPs[cp.id].passed))return cp.id;
+  }
+  return null;
+}
+
+function renderLevels(){
+  var nextCP=getNextCP();
+  var strip=document.getElementById("checkpointStatus");
+  if(S.graduate){strip.innerHTML='<div class="alert-banner alert-pass">🎓 Congratulations! You have graduated! 恭喜毕业！</div>';}
+  else if(nextCP){
+    var cp=getCPById(nextCP);
+    var gatePassed=!cp.gate||(S.completedCPs[cp.gate]&&S.completedCPs[cp.gate].passed);
+    strip.innerHTML='<div class="alert-banner alert-cram">📝 Next: <strong>'+cp.label+'</strong> · Pass: '+cp.passMin+'/100'+(cp.gate&&!gatePassed?' · ⚠️ Pass '+getCPById(cp.gate).label+' first':'')+' </div>';
+  }else{strip.innerHTML="";}
+  var g=document.getElementById("levelsGrid");g.innerHTML="";
+  CUR.forEach(function(lv){
+    var unlocked=isUnlocked(lv.id);
+    var isCur=S.currentLevelId===lv.id;
+    var div=document.createElement("div");
+    div.className="level-card "+(unlocked?(isCur?"active-lv ":"")+"unlocked":"locked");
+    var afterCP=null;
+    CHECKPOINTS.forEach(function(c){if(c.after===lv.id&&!c.isMajor)afterCP=c;});
+    var cpHtml="";
+    if(afterCP){
+      var res=S.completedCPs[afterCP.id];
+      if(res)cpHtml='<div class="cp-badge '+(res.passed?"cp-passed":"cp-fail")+'">'+(res.passed?"✅":"❌")+" "+afterCP.label+": "+res.score+"/100</div>";
+      else if(unlocked)cpHtml='<div class="cp-badge cp-pending">📝 '+afterCP.label+" pending</div>";
+    }
+    div.innerHTML='<div style="font-size:26px">'+lv.emoji+'</div><div class="level-name">'+lv.name+'</div><div class="level-sub">'+lv.nameCh+"</div>"+cpHtml+(unlocked?"":'<div style="font-size:22px;position:absolute;bottom:10px;right:12px;opacity:.35">🔒</div>');
+    if(unlocked)div.onclick=(function(id){return function(){selectLevel(id);};})(lv.id);
+    g.appendChild(div);
+  });
+}
+
+function selectLevel(id){
+  S.currentLevelId=id;S.vocabIdx=0;S.sentIdx=0;S.storyIdx=0;saveS();updateHeader();
+  var lv=getLevelById(id);
+  showModal("📚",lv.name+" "+lv.nameCh,"Start practising! 开始练习！",
+    [{label:"Start Words 开始单词",fn:function(){hideModal();switchTab("vocab");}},{label:"Back 返回",fn:hideModal,primary:false}]);
+}
+
+// MOUTH & SPEECH
+var mouthTimer=null;
+function animateMouth(dur){
+  var path=document.getElementById("mouthPath"),tongue=document.getElementById("tongue");
+  if(!path)return;
+  var shapes=["M 18 28 Q 40 46 62 28","M 18 30 Q 40 38 62 30","M 22 32 Q 40 43 58 32","M 20 29 Q 40 36 60 29","M 24 31 Q 40 41 56 31"];
+  var tRx=[0,8,10,6,9,7];var i=0;
+  clearInterval(mouthTimer);
+  mouthTimer=setInterval(function(){path.setAttribute("d",shapes[i%shapes.length]);tongue.setAttribute("rx",tRx[i%tRx.length]);tongue.setAttribute("ry",tRx[i%tRx.length]*0.5);i++;},110);
+  setTimeout(function(){clearInterval(mouthTimer);path.setAttribute("d","M 18 30 Q 40 38 62 30");tongue.setAttribute("rx",0);tongue.setAttribute("ry",0);},dur||2000);
+}
+function speakText(text,dur){
+  if(!window.speechSynthesis)return;
+  window.speechSynthesis.cancel();
+  var u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=0.82;u.pitch=1.05;
+  var vs=window.speechSynthesis.getVoices();
+  var pref=null;
+  vs.forEach(function(v){if(!pref&&v.lang.startsWith("en")&&(v.name.indexOf("Female")>=0||v.name.indexOf("Samantha")>=0||v.name.indexOf("Karen")>=0||v.name.indexOf("Google")>=0))pref=v;});
+  if(pref)u.voice=pref;
+  window.speechSynthesis.speak(u);animateMouth(dur||2000);
+}
+function speakWord(){speakText(document.getElementById("vocabWord").textContent,2000);}
+var hintWordCur="";
+function speakHintWord(){speakText(hintWordCur,1500);}
+
+// VOCAB
+function renderVocab(){
+  var lv=getCurLevel();
+  document.getElementById("vocabLevelLabel").textContent="Words 单词 · "+lv.name;
+  var vocab=lv.vocab,vi=S.vocabIdx%vocab.length,v=vocab[vi];
+  document.getElementById("vocabType").textContent=v.type;
+  document.getElementById("vocabWord").textContent=v.w;
+  document.getElementById("vocabZh").textContent=v.zh;
+  document.getElementById("vocabEg").textContent=v.eg;
+  document.getElementById("vocabEgZh").textContent=v.egZh;
+  document.getElementById("vocabCounter").textContent=(vi+1)+" / "+vocab.length;
+  document.getElementById("vocabBar").style.width=((vi+1)/vocab.length*100)+"%";
+  document.getElementById("vocabFb").style.display="none";
+  var opts=[v];
+  while(opts.length<4){var r=vocab[Math.floor(Math.random()*vocab.length)];if(!opts.find(function(o){return o.w===r.w;}))opts.push(r);}
+  opts.sort(function(){return Math.random()-.5;});
+  var c=document.getElementById("vocabOptions");c.innerHTML="";
+  opts.forEach(function(o){
+    var b=document.createElement("button");b.className="option-btn";b.textContent=o.zh;
+    b.onclick=(function(correct,btn,v2){return function(){checkVocab(correct,btn,v2);};})(o.w===v.w,b,v);
+    c.appendChild(b);
+  });
+}
+function checkVocab(correct,btn,v){
+  document.querySelectorAll(".option-btn").forEach(function(b){b.disabled=true;});
+  var fb=document.getElementById("vocabFb");fb.style.display="block";
+  if(correct){btn.classList.add("correct");fb.className="feedback good";fb.textContent="✅ Correct! 正确！ +1 ⭐";var k=S.currentLevelId+"_"+S.vocabIdx;if(!S.vocabDone[k]){S.vocabDone[k]=true;addStar(1);}}
+  else{btn.classList.add("wrong");fb.className="feedback bad";fb.textContent="❌ Answer: "+v.zh;document.querySelectorAll(".option-btn").forEach(function(b){if(b.textContent===v.zh)b.classList.add("correct");});}
+}
+function nextVocab(){var v=getCurLevel().vocab;S.vocabIdx=(S.vocabIdx+1)%v.length;saveS();renderVocab();}
+function prevVocab(){var v=getCurLevel().vocab;S.vocabIdx=(S.vocabIdx-1+v.length)%v.length;saveS();renderVocab();}
+
+// SENTENCES
+var sentBuilt=[];
+function renderSent(){
+  var s=getCurLevel().sentences[S.sentIdx%getCurLevel().sentences.length];
+  document.getElementById("sentZh").textContent=s.zh;sentBuilt=[];
+  document.getElementById("sentFb").style.display="none";
+  var shuffled=s.en.slice().sort(function(){return Math.random()-.5;});
+  var pool=document.getElementById("wordPool");pool.innerHTML="";
+  shuffled.forEach(function(w){
+    var b=document.createElement("button");b.className="word-chip pool-chip";b.textContent=w;
+    b.onclick=function(){if(b.classList.contains("used"))return;b.classList.add("used");sentBuilt.push({w:w,b:b});renderBA();};
+    pool.appendChild(b);
+  });
+  renderBA();
+}
+function renderBA(){
+  var a=document.getElementById("buildArea");
+  if(!sentBuilt.length){a.innerHTML='<span style="color:#aaa;font-size:13px">Tap words above 点击上面的词语</span>';return;}
+  a.innerHTML="";
+  sentBuilt.forEach(function(it,i){
+    var c=document.createElement("button");c.className="word-chip";c.textContent=it.w;
+    c.onclick=(function(idx){return function(){sentBuilt[idx].b.classList.remove("used");sentBuilt.splice(idx,1);renderBA();};})(i);
+    a.appendChild(c);
+  });
+}
+function clearSent(){sentBuilt.forEach(function(it){it.b.classList.remove("used");});sentBuilt=[];renderBA();document.getElementById("sentFb").style.display="none";}
+function checkSent(){
+  var s=getCurLevel().sentences[S.sentIdx%getCurLevel().sentences.length];
+  var ans=sentBuilt.map(function(i){return i.w;}).join(" ");
+  var fb=document.getElementById("sentFb");fb.style.display="block";
+  if(ans===s.en.join(" ")){fb.className="feedback good";fb.textContent="✅ Perfect! 太棒了！ +2 ⭐";addStar(2);S.sentDone++;saveS();}
+  else{fb.className="feedback bad";fb.textContent="❌ Correct: "+s.en.join(" ");}
+}
+function nextSent(){var s=getCurLevel().sentences;S.sentIdx=(S.sentIdx+1)%s.length;saveS();renderSent();}
+function prevSent(){var s=getCurLevel().sentences;S.sentIdx=(S.sentIdx-1+s.length)%s.length;saveS();renderSent();}
+
+// STORY
+function renderStory(){
+  var st=getCurLevel().stories[S.storyIdx%getCurLevel().stories.length];
+  document.getElementById("storyHint").style.display="none";
+  var html='<h3 style="font-size:18px;font-weight:800;color:var(--g1);margin-bottom:12px">'+st.title+'</h3><div class="story-text">';
+  st.text.split(/(\[[^\]]+\])/).forEach(function(p){
+    var m=p.match(/^\[(.+)\]$/);
+    if(m)html+='<span class="hl" data-word="'+m[1].replace(/"/g,"&quot;")+'">'+m[1]+'</span>';
+    else html+=p;
+  });
+  html+="</div>";
+  document.getElementById("storyCard").innerHTML=html;
+  document.querySelectorAll(".hl").forEach(function(el){
+    el.onclick=function(){showHint(el.getAttribute("data-word"),st.words);};
+  });
+}
+function showHint(word,words){
+  hintWordCur=word;
+  document.getElementById("hintWord").textContent=word;
+  document.getElementById("hintZh").textContent="→ "+(words[word]||"");
+  document.getElementById("storyHint").style.display="block";addStar(1);
+}
+function nextStory(){var s=getCurLevel().stories;S.storyIdx=(S.storyIdx+1)%s.length;saveS();renderStory();}
+function prevStory(){var s=getCurLevel().stories;S.storyIdx=(S.storyIdx-1+s.length)%s.length;saveS();renderStory();}
+
+// EXAM
+function shuffle(a){return a.slice().sort(function(){return Math.random()-.5;});}
+function buildExamQs(coverIds,count){
+  var pool=[];
+  coverIds.forEach(function(id){
+    var lv=getLevelById(id);if(!lv)return;
+    lv.vocab.forEach(function(v){
+      var distractZh=lv.vocab.filter(function(x){return x.w!==v.w;}).slice(0,3).map(function(x){return x.zh;});
+      var distractEn=lv.vocab.filter(function(x){return x.w!==v.w;}).slice(0,3).map(function(x){return x.w;});
+      pool.push({q:'What does "'+v.w+'" mean?\n"'+v.w+'"是什么意思？',a:v.zh,opts:shuffle([v.zh].concat(distractZh))});
+      pool.push({q:'Which word means "'+v.zh+'"?\n哪个词的意思是"'+v.zh+'"？',a:v.w,opts:shuffle([v.w].concat(distractEn))});
+    });
+    lv.sentences.forEach(function(s){
+      var idx=Math.floor(Math.random()*s.en.length);
+      var miss=s.en[idx];
+      var blank=s.en.map(function(w,i){return i===idx?"____":w;}).join(" ");
+      var wrongs=lv.vocab.slice(0,3).map(function(v){return v.w;}).filter(function(w){return w!==miss;});
+      pool.push({q:"Fill in the blank 填空:\n"+blank+"\n("+s.zh+")",a:miss,opts:shuffle([miss].concat(wrongs.slice(0,3)))});
+    });
+  });
+  return shuffle(pool).slice(0,count);
+}
+
+var examState={cpId:null,qs:[],curr:0,score:0,answered:false,wrongQs:[]};
+function renderExamHome(){
+  var nextCPid=getNextCP();
+  if(!nextCPid){
+    document.getElementById("examSub").textContent=S.graduate?"You have graduated! 你毕业了！":"Complete all levels first!";
+    document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:52px">'+(S.graduate?"🎓":"📚")+'</div><div style="font-size:16px;font-weight:800;color:var(--g1);margin-top:12px">'+(S.graduate?"You have graduated! 你毕业了！":"Complete the current levels first!")+'</div></div>';
+    return;
+  }
+  var cp=getCPById(nextCPid);
+  if(cp.gate&&!(S.completedCPs[cp.gate]&&S.completedCPs[cp.gate].passed)){
+    var g=getCPById(cp.gate);
+    document.getElementById("examSub").textContent=cp.label+" · Locked 锁定";
+    document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:42px">🔒</div><div style="font-size:15px;font-weight:800;color:var(--g1);margin:12px 0 6px">'+cp.label+' is locked</div><div style="font-size:13px;color:var(--muted)">Pass '+g.label+' first. 先通过'+g.label+'。</div></div>';
+    return;
+  }
+  var failed=S.failedCPs[nextCPid],cramDone=failed?failed.cramRounds:0,locked=failed&&cramDone<10;
+  document.getElementById("examSub").textContent=cp.label+(cp.isMajor?" 🎓":"");
+  var coverNames=cp.covers.map(function(id){var l=getLevelById(id);return l?l.name:"";}).join(", ");
+  var infoHtml='<div style="background:var(--g6);border-radius:12px;padding:13px;margin-bottom:16px;font-size:13px;line-height:1.8;text-align:left">✅ Pass mark: <strong>'+cp.passMin+'/100</strong><br>📋 20 questions 共20题<br>⭐ +10 bonus stars if you pass'+(cp.isMajor?'<br>🎓 Certificate if you pass! 通过可打印证书！':'')+(failed?'<br>⚠️ Previous: '+failed.lastScore+'/100':'')+(locked?'<br>🔒 Complete <strong>'+cramDone+'/10</strong> cram rounds first 先完成补习':'')+'\n</div>';
+  var btn=locked?'<button class="btn btn-amber" onclick="switchTab(\'cram\')" style="padding:14px;font-size:15px;border-radius:13px">🔥 Go to Cram 去补习 ('+cramDone+'/10)</button>':'<button class="btn btn-primary" onclick="startExam(\''+nextCPid+'\')" style="padding:14px;font-size:15px;border-radius:13px">Start Exam 开始考试 →</button>';
+  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:48px">'+(cp.isMajor?"🎓":"📝")+'</div><div style="font-size:18px;font-weight:800;color:var(--g1);margin:10px 0 4px">'+cp.label+'</div><div style="font-size:13px;color:var(--muted);margin-bottom:14px">Covers: '+coverNames+'</div>'+infoHtml+btn+'</div>';
+}
+function startExam(cpId){
+  var cp=getCPById(cpId);
+  examState={cpId:cpId,qs:buildExamQs(cp.covers,20),curr:0,score:0,answered:false,wrongQs:[]};
+  renderExamQ();
+}
+function renderExamQ(){
+  var qs=examState.qs,curr=examState.curr;
+  if(curr>=qs.length){renderExamResult();return;}
+  var q=qs[curr];examState.answered=false;
+  var optsHtml=q.opts.map(function(o){return '<button class="quiz-opt" onclick="answerExam(this,\''+o.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',\''+q.a.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'+o+'</button>';}).join("");
+  document.getElementById("examBody").innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><span style="font-size:12px;color:var(--muted);font-weight:700">Q '+(curr+1)+' / '+qs.length+'</span><span style="font-size:12px;color:var(--g1);font-weight:700">Score: '+examState.score*5+'</span></div><div class="prog-wrap"><div class="prog-fill" style="width:'+(curr/qs.length*100)+'%"></div></div><div class="quiz-q-box" style="margin-top:12px">'+q.q.replace(/\n/g,"<br>")+'</div><div class="quiz-opts" id="examOpts">'+optsHtml+'</div><div class="feedback" id="examFb" style="display:none"></div><button class="btn btn-primary" id="examNext" onclick="nextExamQ()" style="display:none;margin-top:12px">Next 下一题 →</button></div>';
+}
+function answerExam(btn,chosen,correct){
+  if(examState.answered)return;examState.answered=true;
+  document.querySelectorAll(".quiz-opt").forEach(function(b){b.disabled=true;if(b.textContent===correct)b.classList.add("correct");});
+  if(chosen!==correct)btn.classList.add("wrong");
+  var fb=document.getElementById("examFb");fb.style.display="block";
+  if(chosen===correct){examState.score++;fb.className="feedback good";fb.textContent="✅ Correct! 正确！";}
+  else{examState.wrongQs.push(examState.qs[examState.curr]);fb.className="feedback bad";fb.textContent="❌ Answer: "+correct;}
+  document.getElementById("examNext").style.display="block";
+}
+function nextExamQ(){examState.curr++;renderExamQ();}
+function renderExamResult(){
+  var cp=getCPById(examState.cpId);
+  var pct=Math.round(examState.score/examState.qs.length*100);
+  var passed=pct>=cp.passMin;
+  S.completedCPs[examState.cpId]={score:pct,passed:passed,date:new Date().toLocaleDateString("en-SG")};
+  if(passed){
+    addStar(10);delete S.failedCPs[examState.cpId];
+    if(cp.unlocks&&cp.unlocks.indexOf("__")<0){
+      var fromIdx=CUR.findIndex(function(l){return l.id===cp.unlocks;});
+      if(fromIdx>=0){if(S.unlockedLevels.indexOf(CUR[fromIdx].id)<0)S.unlockedLevels.push(CUR[fromIdx].id);if(CUR[fromIdx+1]&&S.unlockedLevels.indexOf(CUR[fromIdx+1].id)<0)S.unlockedLevels.push(CUR[fromIdx+1].id);}
+    }
+    if(cp.id==="psle"){if(S.unlockedLevels.indexOf("s1")<0)S.unlockedLevels.push("s1","s2");}
+    if(cp.id==="cp8"){if(S.unlockedLevels.indexOf("s3")<0)S.unlockedLevels.push("s3","s4");}
+    if(cp.id==="olevel")S.graduate=true;
+    saveS();
+  }else{
+    S.failedCPs[examState.cpId]={cramRounds:0,wrongQs:examState.wrongQs,lastScore:pct};saveS();
+  }
+  updateHeader();
+  var unlockMsg="";
+  if(passed&&cp.unlocks&&cp.unlocks.indexOf("__")<0){var ul=getLevelById(cp.unlocks);if(ul)unlockMsg="<br>🎉 <strong>"+ul.name+" UNLOCKED! 已解锁！</strong>";}
+  if(passed&&cp.id==="psle")unlockMsg="<br>🎉 <strong>Secondary school UNLOCKED! 中学已解锁！</strong>";
+  if(passed&&cp.id==="olevel")unlockMsg="<br>🎓 <strong>You have GRADUATED! 你毕业了！</strong>";
+  var btns=((!passed)?'<button class="btn btn-amber" onclick="switchTab(\'cram\')">🔥 Cram Practice 补习</button>':'')+(passed&&cp.certId?'<button class="btn btn-primary" onclick="printCert(\''+cp.certId+'\')">🎓 Print Certificate</button>':'')+'<button class="btn btn-secondary" onclick="renderExamHome()">Back 返回</button>';
+  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:60px">'+(passed?"🏆":"💪")+'</div><div style="font-size:76px;font-weight:900;color:var(--g1);line-height:1">'+pct+'</div><div style="font-size:12px;color:var(--muted)">out of 100</div><div style="font-size:18px;font-weight:800;margin-top:8px">'+(passed?"You passed! 你通过了！":"Keep trying! 继续加油！")+'</div><div style="font-size:13px;color:var(--muted);margin-top:4px">'+examState.score+' / '+examState.qs.length+' correct · Pass: '+cp.passMin+(passed?' · +10 ⭐':'')+unlockMsg+(!passed?'<br>⚠️ Complete 10 cram rounds then retake 完成10次补习再重考':'')+' </div><div class="nav-row" style="margin-top:18px">'+btns+'</div></div>';
+}
+
+// CRAM
+var cramState={cpId:null,qs:[],curr:0,answered:false};
+function renderCram(){
+  var failedIds=Object.keys(S.failedCPs);
+  if(!failedIds.length){document.getElementById("cramBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:42px">🌟</div><div style="font-size:16px;font-weight:800;color:var(--g1);margin-top:10px">No cram needed! 不需要补习！</div><div style="font-size:13px;color:var(--muted);margin-top:6px">You have not failed any exam yet. 你还没有失败过任何考试。</div></div>';return;}
+  var cpId=failedIds[0],fail=S.failedCPs[cpId],cp=getCPById(cpId),done=fail.cramRounds;
+  var dotsHtml=Array.from({length:10},function(_,i){return '<div class="cram-dot '+(i<done?"done":"")+'">'+(i<done?"✓":i+1)+'</div>';}).join("");
+  if(cramState.cpId!==cpId){
+    var wqs=(fail.wrongQs&&fail.wrongQs.length>=4)?fail.wrongQs:buildExamQs(cp.covers,20);
+    cramState={cpId:cpId,qs:shuffle(wqs),curr:0,answered:false};
+  }
+  var roundQ=cramState.qs[cramState.curr%cramState.qs.length],canRetake=done>=10;
+  var topHtml='<div class="cram-card"><div style="font-weight:800;font-size:15px;color:#b8860b">🔥 '+cp.label+' Cram — Round '+(done+1)+'</div><div style="font-size:12px;color:#8a6a00;margin-top:3px">Complete 10 rounds to unlock retake · 完成10轮解锁重考</div><div class="cram-rounds">'+dotsHtml+'</div></div>';
+  if(canRetake){
+    document.getElementById("cramBody").innerHTML=topHtml+'<div class="alert-banner alert-pass">✅ Cram complete! You can now retake the exam. 补习完成，可以重考了！<br><button class="btn btn-primary" onclick="switchTab(\'exam\')" style="margin-top:10px;padding:12px;border-radius:13px">Go to Exam 去考试 →</button></div>';
+  }else{
+    var optsHtml=roundQ.opts.map(function(o){return '<button class="quiz-opt" onclick="answerCram(this,\''+o.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',\''+roundQ.a.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'+o+'</button>';}).join("");
+    document.getElementById("cramBody").innerHTML=topHtml+'<div class="card"><div style="font-size:12px;color:var(--muted);margin-bottom:10px">'+(cramState.curr%cramState.qs.length+1)+'/'+cramState.qs.length+' · Drilling weak spots 针对弱点练习</div><div class="quiz-q-box">'+roundQ.q.replace(/\n/g,"<br>")+'</div><div class="quiz-opts" id="cramOpts">'+optsHtml+'</div><div class="feedback" id="cramFb" style="display:none"></div><button class="btn btn-primary" id="cramNext" onclick="nextCram()" style="display:none;margin-top:12px">Next 下一题 →</button></div>';
+  }
+}
+function answerCram(btn,chosen,correct){
+  if(cramState.answered)return;cramState.answered=true;
+  document.querySelectorAll("#cramOpts .quiz-opt").forEach(function(b){b.disabled=true;if(b.textContent===correct)b.classList.add("correct");});
+  if(chosen!==correct)btn.classList.add("wrong");
+  var fb=document.getElementById("cramFb");fb.style.display="block";
+  if(chosen===correct){fb.className="feedback good";fb.textContent="✅ Correct! 正确！ +1 ⭐";addStar(1);}
+  else{fb.className="feedback bad";fb.textContent="❌ Answer: "+correct;}
+  document.getElementById("cramNext").style.display="block";
+}
+function nextCram(){
+  cramState.curr++;cramState.answered=false;
+  if(cramState.curr>0&&cramState.curr%5===0){
+    if(S.failedCPs[cramState.cpId]){
+      S.failedCPs[cramState.cpId].cramRounds=Math.min((S.failedCPs[cramState.cpId].cramRounds||0)+1,10);
+      saveS();updateHeader();
+    }
+  }
+  renderCram();
+}
+
+// PROGRESS
+var BADGES=[{label:"🌱 First Star 第一颗星",need:1},{label:"⭐ 10 Stars",need:10},{label:"🔥 25 Stars",need:25},{label:"💪 50 Stars",need:50},{label:"👑 100 Stars",need:100},{label:"📚 First Checkpoint Passed",needCP:1},{label:"🎓 PSLE Passed",needCert:"psle"},{label:"🏆 O-Level Passed",needCert:"olevel"},{label:"🌟 Graduate 毕业",needGraduate:true}];
+function renderProgress(){
+  document.getElementById("pStage").textContent=getCurLevel().stage;
+  document.getElementById("pStars").textContent=S.totalStars;
+  var best=Object.values(S.completedCPs).reduce(function(m,c){return Math.max(m,c.score||0);},0);
+  document.getElementById("pBest").textContent=best?best+"/100":"—";
+  var hist=document.getElementById("cpHistory");hist.innerHTML="";
+  CHECKPOINTS.forEach(function(cp){
+    var res=S.completedCPs[cp.id];if(!res)return;
+    var d=document.createElement("div");
+    d.style.cssText="background:#fff;border-radius:13px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;box-shadow:var(--shadow)";
+    d.innerHTML='<div style="font-size:22px">'+(res.passed?"✅":"❌")+'</div><div style="flex:1"><div style="font-weight:800;font-size:14px">'+cp.label+'</div><div style="font-size:11px;color:var(--muted)">'+(res.date||"")+'</div></div><div style="font-size:18px;font-weight:900;color:'+(res.passed?"var(--g1)":"var(--red)")+'">'+res.score+'</div>';
+    hist.appendChild(d);
+  });
+  var cpPassed=Object.values(S.completedCPs).filter(function(c){return c.passed;}).length;
+  var bw=document.getElementById("badgesWrap");bw.innerHTML="";
+  BADGES.forEach(function(b){
+    var earned=(b.need&&S.totalStars>=b.need)||(b.needCP&&cpPassed>=b.needCP)||(b.needCert==="psle"&&S.completedCPs.psle&&S.completedCPs.psle.passed)||(b.needCert==="olevel"&&S.completedCPs.olevel&&S.completedCPs.olevel.passed)||(b.needGraduate&&S.graduate);
+    var p=document.createElement("span");p.className="badge-pill "+(earned?"earned":"locked");p.textContent=b.label+(earned?" ✓":"");bw.appendChild(p);
+  });
+  var cs=document.getElementById("certSection"),cb=document.getElementById("certButtons");cb.innerHTML="";var hasCert=false;
+  if(S.completedCPs.psle&&S.completedCPs.psle.passed){hasCert=true;var b1=document.createElement("button");b1.className="btn btn-primary";b1.style.cssText="padding:12px;border-radius:13px";b1.textContent="🎓 PSLE Certificate";b1.onclick=function(){printCert("psle");};cb.appendChild(b1);}
+  if(S.completedCPs.olevel&&S.completedCPs.olevel.passed){hasCert=true;var b2=document.createElement("button");b2.className="btn btn-primary";b2.style.cssText="padding:12px;border-radius:13px";b2.textContent="🏆 O-Level Certificate";b2.onclick=function(){printCert("olevel");};cb.appendChild(b2);}
+  cs.style.display=hasCert?"block":"none";
+}
+
+// CERTIFICATES
+function printCert(type){
+  var name=S.name||"Student",date=(S.completedCPs[type]&&S.completedCPs[type].date)||new Date().toLocaleDateString("en-SG"),isPSLE=type==="psle";
+  var title=isPSLE?"PSLE Equivalent Certificate":"O-Level Equivalent Certificate";
+  var titleCh=isPSLE?"小学会考同等证书":"普通教育证书";
+  var score=(S.completedCPs[type]&&S.completedCPs[type].score)||0;
+  var body=isPSLE?"has successfully completed the Primary School English curriculum (Primary 1 to 6) and passed the PSLE Equivalent Examination with a score of <strong>"+score+"/100</strong>.":"has successfully completed the Secondary School English curriculum (Secondary 1 to 4) and passed the O-Level Equivalent Examination with a score of <strong>"+score+"/100</strong>.";
+  document.getElementById("printArea").innerHTML='<div class="cert-wrap"><div style="font-size:12px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px">Certificate of Achievement 成就证书</div><div style="font-size:52px">'+(isPSLE?"🎓":"🏆")+'</div><div class="cert-title">'+title+'</div><div class="cert-sub">'+titleCh+'</div><div style="font-size:14px;color:var(--muted);margin:10px 0 4px">This certifies that</div><div class="cert-name">'+name+'</div><div class="cert-body">'+body+'</div><div style="display:flex;justify-content:center;gap:40px;margin-top:22px"><div style="text-align:center"><div style="border-top:2px solid var(--g3);padding-top:8px;font-size:11px;color:var(--muted);width:130px">'+date+'<br>Date 日期</div></div><div style="text-align:center"><div style="border-top:2px solid var(--g3);padding-top:8px;font-size:11px;color:var(--muted);width:130px">Learn English 学英语<br>Issued by 颁发机构</div></div></div><div style="margin-top:18px;font-size:12px;color:var(--muted)">🌿 Learn English for Mama · With love 带着爱心 💚</div></div>';
+  window.print();
+}
+
+// SETTINGS
+function renderSettings(){
+  document.getElementById("nameInput").value=S.name||"";
+  try{document.getElementById("saveCodeBox").textContent=btoa(unescape(encodeURIComponent(JSON.stringify(S))));}catch(e){document.getElementById("saveCodeBox").textContent="Error";}
+}
+function saveName(){S.name=document.getElementById("nameInput").value.trim();saveS();showModal("💚","Name saved! 名字已保存！","Hello, "+S.name+"! 你好！",[{label:"OK",fn:hideModal}]);}
+function copySaveCode(){
+  var code=document.getElementById("saveCodeBox").textContent;
+  if(navigator.clipboard){navigator.clipboard.writeText(code).then(function(){document.getElementById("copyFb").style.display="block";setTimeout(function(){document.getElementById("copyFb").style.display="none";},3000);}).catch(function(){alert("Please manually select and copy the code above.");});}
+  else{alert("Please manually select and copy the code above.");}
+}
+function importSaveCode(){
+  var code=document.getElementById("importBox").value.trim(),fb=document.getElementById("importFb");
+  if(!code){fb.style.display="block";fb.className="feedback bad";fb.textContent="❌ Please paste a code first 请先粘贴存档码";return;}
+  try{var parsed=JSON.parse(decodeURIComponent(escape(atob(code))));S=Object.assign({},S,parsed);saveS();updateHeader();fb.style.display="block";fb.className="feedback good";fb.textContent="✅ Progress loaded! 进度已载入！";renderSettings();}
+  catch(e){fb.style.display="block";fb.className="feedback bad";fb.textContent="❌ Invalid code. Please try again. 无效的存档码。";}
+}
+function confirmReset(){
+  showModal("⚠️","Reset Everything? 确认重置？","This will erase ALL your progress. Are you sure?\n这将清除所有进度。你确定吗？",
+    [{label:"Yes, Reset 确定重置",fn:function(){S={name:S.name,currentLevelId:"p1",unlockedLevels:["p1","p2"],completedCPs:{},failedCPs:{},totalStars:0,todayStars:0,xp:0,vocabIdx:0,sentIdx:0,storyIdx:0,vocabDone:{},sentDone:0,graduate:false};saveS();updateHeader();hideModal();switchTab("levels");}},{label:"Cancel 取消",fn:hideModal,primary:false}]);
+}
+
+// MODAL
+function showModal(emoji,title,msg,btns){
+  document.getElementById("modalEmoji").textContent=emoji;document.getElementById("modalTitle").textContent=title;document.getElementById("modalMsg").innerHTML=msg;
+  var bc=document.getElementById("modalBtns");bc.innerHTML="";
+  btns.forEach(function(b){var btn=document.createElement("button");btn.className="btn "+(b.primary===false?"btn-secondary":"btn-primary");btn.textContent=b.label;btn.onclick=b.fn;bc.appendChild(btn);});
+  document.getElementById("modalOverlay").classList.remove("hidden");
+}
+function hideModal(){document.getElementById("modalOverlay").classList.add("hidden");}
+
+// INIT
+loadS();updateHeader();renderLevels();renderVocab();renderSent();renderStory();
+if(window.speechSynthesis)window.speechSynthesis.getVoices();
+
+</script>
+</body>
+</html>
