@@ -677,8 +677,7 @@ function showLockMsg(from){
   document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("active");});
   document.getElementById("screen-lesson").classList.add("active");
   renderLesson();
-  showModal("📅","Complete today's lesson first!","Finish your daily lesson to unlock free practice.
-先完成今天的课程，才能自由练习！",[{label:"Go to Lesson 去课程",fn:hideModal}]);
+  showModal("📅","Complete today's lesson first!","Finish your daily lesson to unlock free practice. 先完成今天的课程，才能自由练习！",[{label:"Go to Lesson 去课程",fn:hideModal}]);
 }
 
 function getNextCP(){
@@ -1229,23 +1228,19 @@ function renderCalendar(){
 function calPrev(){calWeekOffset--;renderCalendar();}
 function calNext(){calWeekOffset++;renderCalendar();}
 function goToMissed(ds){
-  showModal("📅","Catch-up lesson! 补课！ ("+ds+")","You missed this lesson day. Go to the Lesson tab to complete it now!
-这天的课程没完成。去课程标签完成它！",
+  showModal("📅","Catch-up lesson! 补课！ ("+ds+")","You missed this lesson day. Go to the Lesson tab to complete it now! 这天的课程没完成。去课程标签完成它！",
     [{label:"Go to Lesson 去课程",fn:function(){hideModal();switchTab("lesson");}},{label:"Later 稍后",fn:hideModal,primary:false}]);
 }
 function goToToday(){
-  showModal("📅","Today's lesson! 今天的课程！","Tap below to start today's lesson.
-点击下方开始今天的课程。",
+  showModal("📅","Today's lesson! 今天的课程！","Tap below to start today's lesson. 点击下方开始今天的课程。",
     [{label:"Start Lesson 开始课程",fn:function(){hideModal();switchTab("lesson");}},{label:"Later 稍后",fn:hideModal,primary:false}]);
 }
 function showFutureDay(ds){
-  showModal("📅","Upcoming study day 即将到来的学习日",ds+" is a scheduled lesson day. Keep it up!
-"+ds+" 是预定的学习日。继续加油！",
+  showModal("📅","Upcoming study day 即将到来的学习日",ds+" is a scheduled lesson day. Keep it up! "+ds+" 是预定的学习日。继续加油！",
     [{label:"OK",fn:hideModal}]);
 }
 function showDoneDay(ds){
-  showModal("✅","Lesson completed! 课程完成！","Great job on "+ds+"! You completed that lesson.
-做得好！你完成了那天的课程。",
+  showModal("✅","Lesson completed! 课程完成！","Great job on "+ds+"! You completed that lesson. 做得好！你完成了那天的课程。",
     [{label:"OK 好的",fn:hideModal}]);
 }
 
