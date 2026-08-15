@@ -503,29 +503,11 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:10px;p
 
   <div class="card">
     <div style="font-weight:800;color:var(--g1);margin-bottom:6px;font-size:15px">📋 Apps Script Code 脚本代码</div>
-    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Copy this code into your Google Apps Script editor. 复制这段代码到Google脚本编辑器。</div>
-    <div class="save-code" id="appsScriptCode" style="max-height:120px">function doPost(e){
-  var ss=SpreadsheetApp.getActiveSpreadsheet();
-  var sh=ss.getSheetByName("Progress")||ss.insertSheet("Progress");
-  var data=JSON.parse(e.postData.contents);
-  var rows=sh.getDataRange().getValues();
-  var found=-1;
-  for(var i=0;i<rows.length;i++){if(rows[i][0]===data.name){found=i;break;}}
-  if(found>=0)sh.getRange(found+1,2).setValue(data.data);
-  else sh.appendRow([data.name,data.data,new Date().toISOString()]);
-  return ContentService.createTextOutput(JSON.stringify({status:"ok"})).setMimeType(ContentService.MimeType.JSON);
-}
-function doGet(e){
-  var name=e.parameter.name;
-  var ss=SpreadsheetApp.getActiveSpreadsheet();
-  var sh=ss.getSheetByName("Progress");
-  if(!sh)return ContentService.createTextOutput(JSON.stringify({status:"error",message:"No data"})).setMimeType(ContentService.MimeType.JSON);
-  var rows=sh.getDataRange().getValues();
-  for(var i=0;i<rows.length;i++){if(rows[i][0]===name){return ContentService.createTextOutput(JSON.stringify({status:"ok",data:rows[i][1]})).setMimeType(ContentService.MimeType.JSON);}}
-  return ContentService.createTextOutput(JSON.stringify({status:"error",message:"Not found"})).setMimeType(ContentService.MimeType.JSON);
-}</div>
-    <button class="btn btn-secondary" onclick="copyAppsScript()" style="width:100%;padding:12px;border-radius:13px;margin-top:8px">📋 Copy Script Code 复制脚本</button>
-    <div class="feedback good" id="scriptCopyFb" style="display:none;margin-top:8px">✅ Copied! Paste into Apps Script editor.</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Copy this into Google Apps Script editor. 复制到脚本编辑器。</div>
+    <textarea id="appsScriptCode" readonly style="width:100%;height:130px;font-family:monospace;font-size:10px;background:var(--g7);border:1px solid var(--g5);border-radius:8px;padding:10px;color:var(--text);resize:none;-webkit-user-select:all;user-select:all">function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var sh=ss.getSheetByName("Progress")||ss.insertSheet("Progress");var data=JSON.parse(e.postData.contents);var rows=sh.getDataRange().getValues();var found=-1;for(var i=0;i<rows.length;i++){if(rows[i][0]===data.name){found=i;break;}}if(found>=0)sh.getRange(found+1,2).setValue(data.data);else sh.appendRow([data.name,data.data,new Date().toISOString()]);return ContentService.createTextOutput(JSON.stringify({status:"ok"})).setMimeType(ContentService.MimeType.JSON);}
+function doGet(e){var name=e.parameter.name;var ss=SpreadsheetApp.getActiveSpreadsheet();var sh=ss.getSheetByName("Progress");if(!sh)return ContentService.createTextOutput(JSON.stringify({status:"error",message:"No data"})).setMimeType(ContentService.MimeType.JSON);var rows=sh.getDataRange().getValues();for(var i=0;i<rows.length;i++){if(rows[i][0]===name){return ContentService.createTextOutput(JSON.stringify({status:"ok",data:rows[i][1]})).setMimeType(ContentService.MimeType.JSON);}}return ContentService.createTextOutput(JSON.stringify({status:"error",message:"Not found"})).setMimeType(ContentService.MimeType.JSON);}</textarea>
+    <button type="button" class="btn btn-secondary" onclick="copyAppsScript()" style="width:100%;padding:12px;border-radius:13px;margin-top:8px">📋 Copy Script Code 复制脚本</button>
+    <div class="feedback good" id="scriptCopyFb" style="display:none;margin-top:8px">✅ Copied! Now paste into Apps Script editor.</div>
   </div>
 
   <div class="card" style="border:1.5px solid #f5aaaa">
@@ -1766,11 +1748,25 @@ function syncToSheets(){
 }
 
 function copyAppsScript(){
-  var code=document.getElementById("appsScriptCode").textContent;
-  if(navigator.clipboard){navigator.clipboard.writeText(code).then(function(){
+  var ta=document.getElementById("appsScriptCode");
+  if(!ta)return;
+  var code=ta.value;
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(function(){
+      document.getElementById("scriptCopyFb").style.display="block";
+      setTimeout(function(){document.getElementById("scriptCopyFb").style.display="none";},3000);
+    }).catch(function(){
+      ta.select();ta.setSelectionRange(0,99999);
+      document.execCommand("copy");
+      document.getElementById("scriptCopyFb").style.display="block";
+      setTimeout(function(){document.getElementById("scriptCopyFb").style.display="none";},3000);
+    });
+  } else {
+    ta.select();ta.setSelectionRange(0,99999);
+    document.execCommand("copy");
     document.getElementById("scriptCopyFb").style.display="block";
     setTimeout(function(){document.getElementById("scriptCopyFb").style.display="none";},3000);
-  });}else{alert("Select and copy the code manually.");}
+  }
 }
 
 function loadFromSheets(){
