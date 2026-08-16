@@ -119,7 +119,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;backgrou
 .sl-step{display:flex;align-items:center;gap:9px;background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:7px;box-shadow:var(--shadow);cursor:pointer;border:2px solid transparent;transition:all .2s}
 .sl-step.s-done{border-color:var(--g3);background:var(--g6)}
 .sl-step.s-active{border-color:var(--g2)}
-.sl-step.s-locked{opacity:.38;cursor:not-allowed}
+.sl-step.s-open{opacity:.75}
+.sl-step.s-open:hover{opacity:1;border-color:var(--g4)}
 .sl-step-icon{font-size:20px;flex-shrink:0}
 .sl-step-name{font-size:12px;font-weight:800;color:var(--text)}
 .sl-step-desc{font-size:10px;color:var(--muted);margin-top:1px}
@@ -661,14 +662,19 @@ function renderLessonScreen(){
   var allDone=doneCount>=SL_STEPS.length;
   if(allDone&&!isSLDone(sl.id)){S.completedSLs.push(sl.id);S.lessonLog[todayStr()]="done";addStar(5);saveS();advanceSL();}
   var topHtml='<div class="lesson-top"><div class="lesson-top-title">'+sl.code+' '+sl.title+'</div><div class="lesson-top-sub">'+sl.titleZh+'</div><div class="lesson-ovp"><div class="lesson-ovp-fill" style="width:'+(doneCount/SL_STEPS.length*100)+'%"></div></div><div style="font-size:10px;color:var(--muted);text-align:right;margin-top:3px">'+doneCount+' / '+SL_STEPS.length+'</div></div>';
-  if(allDone){document.getElementById("lessonContent").innerHTML=topHtml+'<div class="unlock-banner"><h3>✅ Lesson Complete! 课程完成！</h3><p>Great job! Tap the Trail to continue.</p></div><div class="nav-row"><button type="button" class="btn btn-primary" onclick="switchTab(\'trail\')">Continue on Trail 继续 →</button></div>';return;}
-  var stepsHtml="";var prevDone=true;
+  var completeBanner=allDone?'<div class="unlock-banner"><h3>✅ Lesson Complete! 课程完成！</h3><p>Tap any step below to review it again. 点击任何步骤复习。</p></div><div class="nav-row" style="margin-bottom:12px"><button type="button" class="btn btn-primary" onclick="switchTab(\'trail\')">Continue on Trail 继续 →</button></div>':"";
+  var stepsHtml="";var foundNext=false;
   SL_STEPS.forEach(function(step){
-    var done=stepIsDone(st,step.id);var locked=!prevDone&&!done;
-    stepsHtml+='<div class="sl-step '+(done?"s-done":locked?"s-locked":"s-active")+'" '+(locked?"":"onclick=\"startStep('"+step.id+"')\"")+'><div class="sl-step-icon">'+step.icon+'</div><div><div class="sl-step-name">'+step.name+'</div><div class="sl-step-desc">'+step.desc+'</div></div><div class="sl-step-tick">'+(done?"✅":"")+'</div></div>';
-    prevDone=done;
+    var done=stepIsDone(st,step.id);
+    var isNext=!done&&!foundNext;
+    if(isNext)foundNext=true;
+    var cls=done?"s-done":isNext?"s-active":"s-open";
+    stepsHtml+='<div class="sl-step '+cls+'" onclick="startStep(\''+step.id+'\')">'
+      +'<div class="sl-step-icon">'+step.icon+'</div>'
+      +'<div style="flex:1"><div class="sl-step-name">'+step.name+'</div><div class="sl-step-desc">'+step.desc+'</div></div>'
+      +'<div class="sl-step-tick">'+(done?"✅":isNext?"▶":"")+'</div></div>';
   });
-  document.getElementById("lessonContent").innerHTML=topHtml+stepsHtml;
+  document.getElementById("lessonContent").innerHTML=topHtml+completeBanner+stepsHtml;
 }
 function advanceSL(){
   var idx=SUBLEVELS.findIndex(function(s){return s.id===S.currentSL;});
@@ -960,7 +966,19 @@ function finishStoryStep(){var st=getSLState(S.currentSL);st.storyDone=true;save
 var wsUA={};
 function renderStepWS(sl){
   var st=getSLState(S.currentSL);var an=st.wsAttempts.length;
-  if(an>=3){st.wsDone=true;saveS();renderLessonScreen();return;}
+  if(an>=3){
+    st.wsDone=true;saveS();
+    // Allow unlimited practice after 3 official attempts
+    document.getElementById("lessonContent").innerHTML='<div class="card" style="text-align:center;padding:28px 18px">'
+      +'<div style="font-size:46px">📋</div>'
+      +'<div style="font-size:16px;font-weight:800;color:var(--g1);margin-top:10px">Worksheet Complete 练习完成</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin:8px 0 16px;line-height:1.7">You have used all 3 official attempts.<br>You can still practise as much as you like!<br>还可以继续练习。</div>'
+      +'<div class="nav-row">'
+      +'<button type="button" class="btn btn-secondary" style="padding:13px;border-radius:13px" onclick="renderLessonScreen()">Back 返回</button>'
+      +'<button type="button" class="btn btn-primary" style="padding:13px;border-radius:13px" onclick="practiseWS()">Practise Again 再练习</button>'
+      +'</div></div>';
+    return;
+  }
   var ver=an%3;var qs=ver===0?sl.worksheetA:ver===1?sl.worksheetB:sl.worksheetC;
   if(!qs||!qs.length){st.wsDone=true;saveS();renderLessonScreen();return;}
   wsUA={};
@@ -1095,9 +1113,45 @@ function submitWS(){
 }
 
 var testSels={};
+
+// ── REVIEW / PRACTISE HELPERS ──
+function retakeTest(){
+  var sl=getSLById(S.currentSL);var st=getSLState(S.currentSL);
+  // Temporarily clear passed flag so the test renders, but keep it saved
+  var wasPassed=st.testPassed;
+  st.testPassed=false;
+  var savedAttempts=st.testAttempts.slice();
+  st.testAttempts=[];
+  window._restoreTest=function(){st.testPassed=wasPassed;st.testAttempts=savedAttempts;saveS();};
+  renderStepTest(sl);
+}
+
+function practiseWS(){
+  var sl=getSLById(S.currentSL);var st=getSLState(S.currentSL);
+  var savedAttempts=st.wsAttempts.slice();
+  st.wsAttempts=[];
+  window._restoreWS=function(){st.wsAttempts=savedAttempts;saveS();};
+  renderStepWS(sl);
+}
+
 function renderStepTest(sl){
   var st=getSLState(S.currentSL);var an=st.testAttempts.length;
-  if(st.testPassed){st.testDone=true;saveS();renderLessonScreen();return;}
+  if(st.testPassed){
+    // Already passed - offer review or practice again
+    var pqs=sl.test||[];
+    var revH=pqs.map(function(q,i){
+      return '<div class="test-question tq-ok"><div class="test-q-num">Q'+(i+1)+'</div><div class="test-q-text">'+q.q+'</div><div style="font-size:13px;font-weight:800;color:var(--g1);margin-top:6px">✓ Answer: '+q.a+'</div></div>';
+    }).join("");
+    document.getElementById("lessonContent").innerHTML='<div class="card">'
+      +'<div class="version-badge">✅ Test Passed 已通过</div>'
+      +'<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Review the answers below, or practise again. 复习答案或再练习一次。</div>'
+      +revH
+      +'<div class="nav-row" style="margin-top:12px">'
+      +'<button type="button" class="btn btn-secondary" style="padding:13px;border-radius:13px" onclick="renderLessonScreen()">Back 返回</button>'
+      +'<button type="button" class="btn btn-primary" style="padding:13px;border-radius:13px" onclick="retakeTest()">Practise Again 再练习</button>'
+      +'</div></div>';
+    return;
+  }
   if(an>=3){st.testDone=true;S.lessonLog[todayStr()]="done";saveS();renderLessonScreen();showModal("💪","Keep Practising! 继续加油！","All 3 attempts used. Lesson marked complete.",[{label:"OK",fn:hideModal}]);return;}
   var qs=sl.test;if(!qs||!qs.length){st.testDone=true;saveS();renderLessonScreen();return;}
   testSels={};
