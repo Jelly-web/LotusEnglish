@@ -440,13 +440,14 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:8px;pa
       <button type="button" class="btn btn-secondary" onclick="syncToSheets()" style="padding:10px;border-radius:10px;font-size:12px">⬆️ Sync</button>
       <button type="button" class="btn btn-secondary" onclick="loadFromSheets()" style="padding:10px;border-radius:10px;font-size:12px">⬇️ Load</button>
     </div>
+    <button type="button" class="btn btn-secondary" onclick="testSheetsConnection()" style="width:100%;padding:11px;border-radius:11px;margin-top:8px;font-size:12px">🔍 Test Connection 测试连接</button>
   </div>
 
   <div class="card">
     <div style="font-weight:800;color:var(--g1);margin-bottom:5px;font-size:13px">📋 Apps Script Code</div>
     <div id="scriptCopyFb" style="display:none;background:#e6f9ee;color:#0d5c2e;border-radius:8px;padding:8px;font-size:11px;font-weight:700;margin-bottom:8px">✅ Copied! Paste into Apps Script editor.</div>
     <textarea id="appsScriptCode" readonly style="width:100%;height:110px;font-family:monospace;font-size:10px;background:var(--g7);border:1px solid var(--g5);border-radius:7px;padding:8px;color:var(--text);resize:none;">function doPost(e){var ss=SpreadsheetApp.getActiveSpreadsheet();var sh=ss.getSheetByName("Progress")||ss.insertSheet("Progress");var data=JSON.parse(e.postData.contents);var rows=sh.getDataRange().getValues();var found=-1;for(var i=0;i<rows.length;i++){if(rows[i][0]===data.name){found=i;break;}}if(found>=0)sh.getRange(found+1,2).setValue(data.data);else sh.appendRow([data.name,data.data,new Date().toISOString()]);return ContentService.createTextOutput(JSON.stringify({status:"ok"})).setMimeType(ContentService.MimeType.JSON);}
-function doGet(e){var name=e.parameter.name;var ss=SpreadsheetApp.getActiveSpreadsheet();var sh=ss.getSheetByName("Progress");if(!sh)return ContentService.createTextOutput(JSON.stringify({status:"error",message:"No data"})).setMimeType(ContentService.MimeType.JSON);var rows=sh.getDataRange().getValues();for(var i=0;i<rows.length;i++){if(rows[i][0]===name){return ContentService.createTextOutput(JSON.stringify({status:"ok",data:rows[i][1]})).setMimeType(ContentService.MimeType.JSON);}}return ContentService.createTextOutput(JSON.stringify({status:"error",message:"Not found"})).setMimeType(ContentService.MimeType.JSON);}</textarea>
+function doGet(e){if(e.parameter.action==="ping"){return ContentService.createTextOutput(JSON.stringify({status:"ok",message:"pong"})).setMimeType(ContentService.MimeType.JSON);}var name=e.parameter.name;var ss=SpreadsheetApp.getActiveSpreadsheet();var sh=ss.getSheetByName("Progress");if(!sh)return ContentService.createTextOutput(JSON.stringify({status:"error",message:"No data"})).setMimeType(ContentService.MimeType.JSON);var rows=sh.getDataRange().getValues();for(var i=0;i<rows.length;i++){if(rows[i][0]===name){return ContentService.createTextOutput(JSON.stringify({status:"ok",data:rows[i][1]})).setMimeType(ContentService.MimeType.JSON);}}return ContentService.createTextOutput(JSON.stringify({status:"error",message:"Not found"})).setMimeType(ContentService.MimeType.JSON);}</textarea>
     <button type="button" class="btn btn-secondary" onclick="copyAppsScript()" style="width:100%;padding:10px;border-radius:10px;margin-top:7px;font-size:12px">📋 Copy Script Code 复制脚本</button>
   </div>
 
@@ -1421,11 +1422,84 @@ function saveName(){S.name=document.getElementById("nameInput").value.trim();sav
 function copySaveCode(){var code=document.getElementById("saveCodeBox").textContent;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(code).then(function(){document.getElementById("copyFb").style.display="block";setTimeout(function(){document.getElementById("copyFb").style.display="none";},3000);}).catch(function(){alert("Select and copy manually.");});}else{alert("Select and copy manually.");}}
 function importSaveCode(){var code=document.getElementById("importBox").value.trim(),fb=document.getElementById("importFb");if(!code){fb.style.display="block";fb.className="feedback bad";fb.textContent="❌ Please paste a code first";return;}try{var parsed=JSON.parse(decodeURIComponent(escape(atob(code))));S=Object.assign({},S,parsed);saveS();updateStreak();updateHeader();fb.style.display="block";fb.className="feedback good";fb.textContent="✅ Progress loaded! 进度已载入！";renderSettings();}catch(e){fb.style.display="block";fb.className="feedback bad";fb.textContent="❌ Invalid code.";}}
 function confirmReset(){showModal("⚠️","Reset Everything?","This erases ALL progress.",[{label:"Yes, Reset",fn:function(){S={name:S.name,currentSL:"p1_1",unlockedLevels:["p1"],completedSLs:[],completedCPs:{},failedCPs:{},examAttempts:{},totalStars:0,todayStars:0,xp:0,vocabLevelId:"p1",vocabIdx:0,graduate:false,studyDays:S.studyDays,lessonLog:{},streak:0,startDate:todayStr(),onboardDone:true,slState:{},habitLog:{},habitStreak:0,sheetsUrl:S.sheetsUrl||""};saveS();updateHeader();hideModal();switchTab("trail");}},{label:"Cancel",fn:hideModal,primary:false}]);}
+
+
+
+
+
+
+
+function testSheetsConnection(){
+  var url=getSheetsUrl();
+  if(!url){showSheetStatus("error","❌ Enter and Save a URL first. 请先保存网址。");return;}
+  showSheetStatus("ok","⏳ Testing connection... 测试连接中...");
+  fetch(url+"?action=ping&t="+Date.now())
+    .then(function(r){return r.text();})
+    .then(function(txt){
+      if(txt.indexOf("<")===0){
+        showSheetStatus("error","❌ Got a sign-in page. Re-deploy with 'Who has access: Anyone'. 需重新部署，权限设为「任何人」。");
+      } else {
+        showSheetStatus("ok","✅ Connection works! The script is reachable. 连接成功！");
+      }
+    })
+    .catch(function(e){
+      showSheetStatus("error","❌ Cannot reach the script. Most likely the URL is wrong or the deployment is not public. 网址错误或未公开部署。");
+    });
+}
+
 function copyAppsScript(){var ta=document.getElementById("appsScriptCode");var fb=document.getElementById("scriptCopyFb");if(!ta)return;var code=ta.value;function showFb(){if(fb){fb.style.display="block";setTimeout(function(){fb.style.display="none";},3000);}}try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(code).then(showFb).catch(function(){ta.focus();ta.select();ta.setSelectionRange(0,code.length);document.execCommand("copy");showFb();});}else{ta.focus();ta.select();ta.setSelectionRange(0,code.length);document.execCommand("copy");showFb();}}catch(err){ta.focus();ta.select();showFb();}}
 function saveSheetUrl(){var url=document.getElementById("sheetsUrl").value.trim();if(!url){showSheetStatus("error","Please enter a URL.");return;}S.sheetsUrl=url;saveS();showSheetStatus("ok","✅ URL saved!");}
 function showSheetStatus(type,msg){var el=document.getElementById("sheetsStatus");if(!el)return;el.innerHTML='<div class="feedback '+(type==="ok"?"good":"bad")+'" style="margin:0">'+msg+'</div>';setTimeout(function(){el.innerHTML="";},4000);}
-function syncToSheets(){var url=S.sheetsUrl;if(!url){showSheetStatus("error","Save your URL first.");return;}showSheetStatus("ok","⏳ Syncing...");fetch(url,{method:"POST",body:JSON.stringify({action:"save",name:S.name||"Mama",data:btoa(unescape(encodeURIComponent(JSON.stringify(S))))})}).then(function(r){return r.json();}).then(function(d){if(d.status==="ok")showSheetStatus("ok","✅ Saved to Google Sheets!");else showSheetStatus("error","❌ Error: "+(d.message||"unknown"));}).catch(function(){showSheetStatus("error","❌ Could not connect.");});}
-function loadFromSheets(){var url=S.sheetsUrl;if(!url){showSheetStatus("error","Save your URL first.");return;}showSheetStatus("ok","⏳ Loading...");fetch(url+"?action=load&name="+(S.name||"Mama")).then(function(r){return r.json();}).then(function(d){if(d.status==="ok"&&d.data){var parsed=JSON.parse(decodeURIComponent(escape(atob(d.data))));S=Object.assign({},S,parsed);saveS();updateStreak();updateHeader();renderSettings();showSheetStatus("ok","✅ Loaded from Sheets!");}else{showSheetStatus("error","❌ No data found.");}}).catch(function(){showSheetStatus("error","❌ Could not connect.");});}
+function syncToSheets(){
+  var url=getSheetsUrl();
+  if(!url){showSheetStatus("error","❌ Please Save your Apps Script URL first. 请先保存脚本网址。");return;}
+  if(url.indexOf("/exec")<0){showSheetStatus("error","❌ URL must end with /exec. You may have copied the wrong link. 网址必须以 /exec 结尾。");return;}
+  showSheetStatus("ok","⏳ Saving... 保存中...");
+  var payload=JSON.stringify({action:"save",name:S.name||"Mama",data:btoa(unescape(encodeURIComponent(JSON.stringify(S))))});
+  fetch(url,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:payload})
+    .then(function(){
+      setTimeout(function(){
+        fetch(url+"?action=load&name="+encodeURIComponent(S.name||"Mama")+"&t="+Date.now())
+          .then(function(r){return r.text();})
+          .then(function(txt){
+            var d=null;try{d=JSON.parse(txt);}catch(e){}
+            if(d&&d.status==="ok"&&d.data)showSheetStatus("ok","✅ Saved and verified! 已保存并确认！");
+            else showSheetStatus("ok","✅ Sent. Check your Google Sheet for a Progress tab. 已发送，请检查表格。");
+          })
+          .catch(function(){showSheetStatus("ok","✅ Sent to Google Sheets. 已发送。");});
+      },1200);
+    })
+    .catch(function(){
+      showSheetStatus("error","❌ Cannot reach the script. Check: (1) URL ends in /exec (2) Deployed with access = Anyone (3) You are online.");
+    });
+}
+function loadFromSheets(){
+  var url=getSheetsUrl();
+  if(!url){showSheetStatus("error","❌ Please Save your Apps Script URL first. 请先保存脚本网址。");return;}
+  if(url.indexOf("/exec")<0){showSheetStatus("error","❌ URL must end with /exec. 网址必须以 /exec 结尾。");return;}
+  showSheetStatus("ok","⏳ Loading... 载入中...");
+  fetch(url+"?action=load&name="+encodeURIComponent(S.name||"Mama")+"&t="+Date.now())
+    .then(function(r){return r.text();})
+    .then(function(txt){
+      if(txt.indexOf("<")===0){
+        showSheetStatus("error","❌ Google returned a sign-in page. Re-deploy the script with 'Who has access: Anyone'. 请重新部署，权限设为「任何人」。");
+        return;
+      }
+      var d=null;
+      try{d=JSON.parse(txt);}catch(e){showSheetStatus("error","❌ Unexpected reply from script. 脚本返回异常。");return;}
+      if(d&&d.status==="ok"&&d.data){
+        var parsed=JSON.parse(decodeURIComponent(escape(atob(d.data))));
+        S=Object.assign({},S,parsed);
+        saveS();updateStreak();updateHeader();renderSettings();
+        showSheetStatus("ok","✅ Progress loaded! 进度已载入！");
+      } else {
+        showSheetStatus("error","❌ No data saved under the name '"+(S.name||"Mama")+"'. Sync from your other device first, and use the same name. 请先在另一设备同步，名字要相同。");
+      }
+    })
+    .catch(function(e){
+      showSheetStatus("error","❌ Cannot reach the script ("+e.message+"). Check the URL ends in /exec and access = Anyone.");
+    });
+}
 function showModal(emoji,title,msg,btns){document.getElementById("modalEmoji").textContent=emoji;document.getElementById("modalTitle").textContent=title;document.getElementById("modalMsg").innerHTML=msg;var bc=document.getElementById("modalBtns");bc.innerHTML="";btns.forEach(function(b){var btn=document.createElement("button");btn.type="button";btn.className="btn "+(b.primary===false?"btn-secondary":"btn-primary");btn.textContent=b.label;btn.onclick=b.fn;bc.appendChild(btn);});document.getElementById("modalOverlay").classList.remove("hidden");}
 function hideModal(){document.getElementById("modalOverlay").classList.add("hidden");}
 
