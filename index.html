@@ -1448,6 +1448,12 @@ function testSheetsConnection(){
 }
 
 function copyAppsScript(){var ta=document.getElementById("appsScriptCode");var fb=document.getElementById("scriptCopyFb");if(!ta)return;var code=ta.value;function showFb(){if(fb){fb.style.display="block";setTimeout(function(){fb.style.display="none";},3000);}}try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(code).then(showFb).catch(function(){ta.focus();ta.select();ta.setSelectionRange(0,code.length);document.execCommand("copy");showFb();});}else{ta.focus();ta.select();ta.setSelectionRange(0,code.length);document.execCommand("copy");showFb();}}catch(err){ta.focus();ta.select();showFb();}}
+var SHEETS_KEY="mama_sheets_url";
+
+function getSheetsUrl(){
+  try{return S.sheetsUrl||localStorage.getItem(SHEETS_KEY)||"";}catch(e){return S.sheetsUrl||"";}
+}
+
 function saveSheetUrl(){var url=document.getElementById("sheetsUrl").value.trim();if(!url){showSheetStatus("error","Please enter a URL.");return;}S.sheetsUrl=url;saveS();showSheetStatus("ok","✅ URL saved!");}
 function showSheetStatus(type,msg){var el=document.getElementById("sheetsStatus");if(!el)return;el.innerHTML='<div class="feedback '+(type==="ok"?"good":"bad")+'" style="margin:0">'+msg+'</div>';setTimeout(function(){el.innerHTML="";},4000);}
 function syncToSheets(){
