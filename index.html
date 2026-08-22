@@ -509,7 +509,7 @@ function doGet(e){if(e.parameter.action==="ping"){return ContentService.createTe
   throw new Error("curriculum.js not loaded");
 }
 
-var APP_VERSION="2.2.0";
+var APP_VERSION="2.2.2";
 
 
 const HABITS_DATA=[{"id": "h1", "text": "Complete today's app lesson", "textZh": "完成今天的课程", "icon": "📱"}, {"id": "h2", "text": "Read one English sign or label out loud", "textZh": "大声朗读一个英文标志或标签", "icon": "🔤"}, {"id": "h3", "text": "Watch 15 mins of English TV with subtitles", "textZh": "看15分钟带字幕的英语电视", "icon": "📺"}, {"id": "h4", "text": "Send one WhatsApp message in English", "textZh": "发一条英文WhatsApp消息", "icon": "💬"}, {"id": "h5", "text": "Learn one new word and use it today", "textZh": "学一个新单词并在今天使用它", "icon": "⭐"}, {"id": "h6", "text": "Read one English sentence from a notice or sign", "textZh": "从通知或标志中读一个英文句子", "icon": "📋"}, {"id": "h7", "text": "Have a 5-minute English conversation", "textZh": "进行5分钟的英语对话", "icon": "🗣️"}];
@@ -809,9 +809,30 @@ function finishOralStep(){
   renderLessonScreen();
 }
 
+
+/* Hide the target word anywhere it appears in hints/examples */
+function maskAnswer(text,answer){
+  if(!text||!answer)return text||"";
+  var esc=String(answer).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+  var out=String(text);
+  // whole-word match, case-insensitive
+  out=out.replace(new RegExp("\\b"+esc+"\\b","gi"),"____");
+  // also catch it without word boundaries (handles CJK text like 元音 A)
+  out=out.replace(new RegExp(esc,"gi"),"____");
+  return out;
+}
+
 function renderStepSpell(sl){
-  var words=(sl.vocab||[]).filter(function(v){return v.w&&v.w.length<=15&&!/\s/.test(v.w);});
-  if(!words.length){var st=getSLState(S.currentSL);st.spellDone=true;saveS();renderLessonScreen();return;}
+  var words=(sl.vocab||[]).filter(function(v){return v.w&&v.w.length>=3&&v.w.length<=15&&!/\s/.test(v.w);});
+  if(!words.length){
+    var st0=getSLState(S.currentSL);st0.spellDone=true;saveS();
+    document.getElementById("lessonContent").innerHTML='<div class="card" style="text-align:center;padding:30px 18px">'
+      +'<div style="font-size:52px">✍️</div>'
+      +'<div style="font-size:19px;font-weight:800;color:var(--g1);margin-top:12px">No spelling for this lesson</div>'
+      +'<div style="font-size:16px;color:var(--muted);margin:8px 0 18px;line-height:1.6">This lesson has no words long enough to spell.<br>\u8fd9\u8bfe\u6ca1\u6709\u9700\u8981\u62fc\u5199\u7684\u8bcd\u3002</div>'
+      +'<button type="button" class="btn btn-primary" style="width:100%;padding:14px;border-radius:13px" onclick="renderLessonScreen()">Continue \u2192 \u7ee7\u7eed</button></div>';
+    return;
+  }
   var spellIdx=0;
   var spellScore=0;
   var spellAttempts=0;
@@ -834,8 +855,8 @@ function renderStepSpell(sl){
       +'<div style="font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Spelling Practice 拼写练习 · '+(spellIdx+1)+' / '+words.length+'</div>'
       +'<div style="text-align:center;margin-bottom:12px">'
       +'<div style="font-size:18px;color:var(--muted);margin-bottom:6px">Listen and spell the word 听单词然后拼写</div>'
-      +'<div style="font-size:26px;color:var(--g1);font-weight:800;margin-bottom:4px">'+v.zh+'</div>'
-      +'<div style="font-size:16px;color:var(--muted);font-style:italic;margin-bottom:12px">'+v.eg+'</div>'
+      +'<div style="font-size:26px;color:var(--g1);font-weight:800;margin-bottom:10px">'+maskAnswer(v.zh,v.w)+'</div>'
+      +'<div style="font-size:15px;color:var(--muted);margin-bottom:12px">'+v.w.length+' letters '+v.w.length+' \u4e2a\u5b57\u6bcd</div>'
       +'<div style="display:flex;justify-content:center;gap:10px;margin-bottom:12px">'
       +'<button type="button" class="speak-btn" id="spellPlay">🔊 Hear word 听单词</button>'
       +'<button type="button" class="speak-btn slow-btn" id="spellSlow">🐢 Slow 慢速</button>'
