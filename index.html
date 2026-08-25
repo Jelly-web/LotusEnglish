@@ -614,7 +614,7 @@ function showLoading(on){
 
 
 
-var APP_VERSION="3.6.0";
+var APP_VERSION="3.6.1";
 
 
 const HABITS_DATA=[{"id": "h1", "text": "Complete today's app lesson", "textZh": "完成今天的课程", "icon": "📱"}, {"id": "h2", "text": "Read one English sign or label out loud", "textZh": "大声朗读一个英文标志或标签", "icon": "🔤"}, {"id": "h3", "text": "Watch 15 mins of English TV with subtitles", "textZh": "看15分钟带字幕的英语电视", "icon": "📺"}, {"id": "h4", "text": "Send one WhatsApp message in English", "textZh": "发一条英文WhatsApp消息", "icon": "💬"}, {"id": "h5", "text": "Learn one new word and use it today", "textZh": "学一个新单词并在今天使用它", "icon": "⭐"}, {"id": "h6", "text": "Read one English sentence from a notice or sign", "textZh": "从通知或标志中读一个英文句子", "icon": "📋"}, {"id": "h7", "text": "Have a 5-minute English conversation", "textZh": "进行5分钟的英语对话", "icon": "🗣️"}];
@@ -777,7 +777,7 @@ function renderLessonScreen(){
   var doneCount=SL_STEPS.filter(function(s){return stepIsDone(st,s.id);}).length;
   var allDone=doneCount>=SL_STEPS.length;
   if(allDone&&!isSLDone(sl.id)){S.completedSLs.push(sl.id);S.lessonLog[todayStr()]="done";addStar(5);saveS();advanceSL();}
-  var topHtml='<div class="lesson-top"><div class="lesson-top-title">'+sl.code+' '+sl.title+'</div><div class="lesson-top-sub">'+sl.titleZh+'</div><div class="lesson-ovp"><div class="lesson-ovp-fill" style="width:'+(doneCount/SL_STEPS.length*100)+'%"></div></div><div style="font-size:13px;color:var(--muted);text-align:right;margin-top:3px">'+doneCount+' / '+SL_STEPS.length+'</div></div>';
+  var topHtml='<div class="lesson-top"><div class="lesson-top-title">'+(sl.icon||'')+' '+sl.title+'</div><div class="lesson-top-sub">'+sl.titleZh+'</div><div class="lesson-ovp"><div class="lesson-ovp-fill" style="width:'+(doneCount/SL_STEPS.length*100)+'%"></div></div><div style="font-size:13px;color:var(--muted);text-align:right;margin-top:3px">'+doneCount+' / '+SL_STEPS.length+'</div></div>';
   var completeBanner=allDone?'<div class="unlock-banner"><h3>✅ Lesson Complete! 课程完成！</h3><p>Tap any step below to review it again. 点击任何步骤复习。</p></div><div class="nav-row" style="margin-bottom:12px"><button type="button" class="btn btn-primary" onclick="switchTab(\'trail\')">Continue on Trail 继续 →</button></div>':"";
   var stepsHtml="";var foundNext=false;
   SL_STEPS.forEach(function(step){
@@ -1897,10 +1897,9 @@ function renderHomework(){
         +'<div style="font-size:17px;font-weight:800;color:var(--text)">'+t.title+'</div>'
         +'<div style="font-size:14px;color:var(--muted)">'+t.titleZh+'</div>'
         +bestHtml
-        +'<div style="display:flex;gap:7px;margin-top:11px;flex-wrap:wrap">'
-        +'<button type="button" class="btn btn-secondary" style="padding:11px 10px;border-radius:10px;font-size:14px;flex:1;min-width:84px" onclick="showHwRule(\''+t.id+'\')">📐 Rules</button>'
-        +'<button type="button" class="btn btn-primary" style="padding:11px 10px;border-radius:10px;font-size:14px;flex:1;min-width:84px" onclick="startHomework(\''+t.id+'\')">💻 Practise</button>'
-        +'<button type="button" class="btn btn-secondary" style="padding:11px 10px;border-radius:10px;font-size:14px;flex:1;min-width:84px" onclick="openPrintPage(\''+t.id+'\')">🖨️ Print</button>'
+        +'<div style="display:flex;gap:8px;margin-top:11px">'
+        +'<button type="button" class="btn btn-secondary" style="padding:12px;border-radius:11px;font-size:15px;flex:1" onclick="showHwRule(\''+t.id+'\')">📐 Rules 规则</button>'
+        +'<button type="button" class="btn btn-primary" style="padding:12px;border-radius:11px;font-size:15px;flex:1" onclick="startHomework(\''+t.id+'\')">💻 Practise 练习</button>'
         +'</div></div></div>';
     });
   });
@@ -1955,7 +1954,7 @@ function renderHomeworkQuiz(){
 
   document.getElementById("homeworkBody").innerHTML='<div class="card">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'
-    +'<div><div style="font-size:18px;font-weight:800;color:var(--g1)">'+sl.code+' '+sl.title+'</div>'
+    +'<div><div style="font-size:18px;font-weight:800;color:var(--g1)">'+(sl.icon||'')+' '+sl.title+'</div>'
     +'<div style="font-size:14px;color:var(--muted)">'+total+' questions · unlimited attempts</div></div>'
     +(best!==undefined?'<div style="text-align:right"><div style="font-size:13px;color:var(--muted)">Best</div><div style="font-size:21px;font-weight:900;color:var(--g1)">'+best+'/20</div></div>':'')
     +'</div>'
@@ -2056,7 +2055,7 @@ function renderPrintPage(){
   }).join("");
 
   document.getElementById("homeworkBody").innerHTML='<div class="card">'
-    +'<div style="font-size:18px;font-weight:800;color:var(--g1)">🖨️ '+sl.code+' '+sl.title+'</div>'
+    +'<div style="font-size:18px;font-weight:800;color:var(--g1)">🖨️ '+(sl.icon||'')+' '+sl.title+'</div>'
     +'<div style="font-size:14px;color:var(--muted);margin-bottom:12px">Print the worksheet · Do it on paper · Enter answers below</div>'
     +'<div style="display:flex;gap:8px;margin-bottom:14px">'
     +'<button type="button" class="btn btn-primary" style="padding:11px;border-radius:11px;font-size:16px;flex:1" onclick="doPrintHomework()">🖨️ Print Worksheet 打印</button>'
@@ -2149,7 +2148,7 @@ function doPrintHomework(){
   document.getElementById("printArea").innerHTML='<div style="padding:26px;font-family:Arial,sans-serif;color:#000">'
     +'<div style="text-align:center;border-bottom:3px solid #2d9b5a;padding-bottom:10px;margin-bottom:16px">'
     +'<div style="font-size:22px;font-weight:900;color:#1a6b3c">🌿 Learn English 学英语</div>'
-    +'<div style="font-size:18px;font-weight:700;margin-top:5px">Homework · '+sl.code+' '+sl.title+'</div>'
+    +'<div style="font-size:18px;font-weight:700;margin-top:5px">Homework · '+(sl.icon||'')+' '+sl.title+'</div>'
     +'<div style="font-size:15px;color:#666">'+sl.titleZh+'</div></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:15px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid #ccc">'
     +'<div>Name 姓名: <strong>'+name+'</strong></div><div>Date 日期: '+today+'</div><div>Score: ____ / '+qs.length+'</div></div>'
