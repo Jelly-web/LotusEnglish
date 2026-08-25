@@ -546,6 +546,52 @@ function loadLevel(level){
     });
 }
 
+
+var HW_TOPICS = [];
+
+/* ── EXAM HELPERS (.6 and .12 of every level) ── */
+function slNumber(slId){ var p=String(slId).split("_"); return parseInt(p[1]||"0",10); }
+
+function coveredSublevels(cp){
+  var out=[];
+  for(var n=cp.coversRange[0]; n<=cp.coversRange[1]; n++){
+    var id = cp.level+"_"+n;
+    if(SUBLEVELS.some(function(s){return s.id===id;})) out.push(id);
+  }
+  return out;
+}
+
+/* Is this exam available? Needs all covered sublevels done + gate passed */
+function examReady(cp){
+  var need = coveredSublevels(cp);
+  var allDone = need.every(function(id){ return isSLDone(id); });
+  var gateOk = !cp.gate || (S.completedCPs[cp.gate] && S.completedCPs[cp.gate].passed);
+  return allDone && gateOk;
+}
+
+function nextExam(){
+  for(var i=0;i<CHECKPOINTS.length;i++){
+    var cp=CHECKPOINTS[i];
+    if(S.completedCPs[cp.id] && S.completedCPs[cp.id].passed) continue;
+    return cp;
+  }
+  return null;
+}
+
+/* Does an exam block progress past this sublevel? */
+function examBlocking(slId){
+  var lvl=levelOf(slId), n=slNumber(slId);
+  for(var i=0;i<CHECKPOINTS.length;i++){
+    var cp=CHECKPOINTS[i];
+    if(cp.level!==lvl) continue;
+    var gateNum=slNumber(cp.afterSL);
+    if(n>gateNum && !(S.completedCPs[cp.id]&&S.completedCPs[cp.id].passed)){
+      if(examReady(cp)) return cp;
+    }
+  }
+  return null;
+}
+
 function levelOf(slId){ return String(slId).split("_")[0]; }
 
 /* Ensure a sublevel's content is loaded, then run cb */
@@ -568,7 +614,7 @@ function showLoading(on){
 
 
 
-var APP_VERSION="3.0.0";
+var APP_VERSION="3.1.0";
 
 
 const HABITS_DATA=[{"id": "h1", "text": "Complete today's app lesson", "textZh": "完成今天的课程", "icon": "📱"}, {"id": "h2", "text": "Read one English sign or label out loud", "textZh": "大声朗读一个英文标志或标签", "icon": "🔤"}, {"id": "h3", "text": "Watch 15 mins of English TV with subtitles", "textZh": "看15分钟带字幕的英语电视", "icon": "📺"}, {"id": "h4", "text": "Send one WhatsApp message in English", "textZh": "发一条英文WhatsApp消息", "icon": "💬"}, {"id": "h5", "text": "Learn one new word and use it today", "textZh": "学一个新单词并在今天使用它", "icon": "⭐"}, {"id": "h6", "text": "Read one English sentence from a notice or sign", "textZh": "从通知或标志中读一个英文句子", "icon": "📋"}, {"id": "h7", "text": "Have a 5-minute English conversation", "textZh": "进行5分钟的英语对话", "icon": "🗣️"}];
@@ -688,6 +734,14 @@ function renderTrail(){
   });
 }
 function openSL(slId){
+  var blocker = examBlocking(slId);
+  if(blocker){
+    showModal("\ud83d\udcdd", blocker.label,
+      "You must pass this exam before continuing.<br>\u5148\u901a\u8fc7\u8fd9\u4e2a\u8003\u8bd5\u624d\u80fd\u7ee7\u7eed\u3002",
+      [{label:"Go to Exam \u53bb\u8003\u8bd5",fn:function(){hideModal();switchTab("exam");}},
+       {label:"Cancel",fn:hideModal,primary:false}]);
+    return;
+  }
   withContent(slId, function(){ _openSL(slId); });
 }
 
@@ -1558,18 +1612,64 @@ function buildExamQs(coverIds,count,version){
 var examState={cpId:null,qs:[],curr:0,score:0,answered:false,wrongQs:[],version:0};
 function getNextCP(){for(var i=0;i<CHECKPOINTS.length;i++){var cp=CHECKPOINTS[i];if(isUnlocked(cp.after)&&!(S.completedCPs[cp.id]&&S.completedCPs[cp.id].passed))return cp.id;}return null;}
 function renderExamHome(){
-  var ncp=getNextCP();
-  if(!ncp){document.getElementById("examSub").textContent=S.graduate?"Graduated!":"No exams yet.";document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:44px">'+(S.graduate?"🎓":"📚")+'</div><div style="font-size:16px;font-weight:800;color:var(--g1);margin-top:9px">'+(S.graduate?"You graduated!":"Complete levels first!")+'</div></div>';return;}
-  var cp=getCPById(ncp);
-  if(cp.gate&&!(S.completedCPs[cp.gate]&&S.completedCPs[cp.gate].passed)){var g=getCPById(cp.gate);document.getElementById("examSub").textContent=cp.label+" · Locked";document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:40px">🔒</div><div style="font-size:16px;font-weight:800;color:var(--g1);margin:9px 0 4px">'+cp.label+' locked</div><div style="font-size:14px;color:var(--muted)">Pass '+g.label+' first.</div></div>';return;}
-  var failed=S.failedCPs[ncp],cramDone=failed?failed.cramRounds:0,locked=failed&&cramDone<10;
-  var atts=S.examAttempts&&S.examAttempts[ncp]?S.examAttempts[ncp]:[];
-  var vN=["V1: Meaning","V2: Fill Blanks","V3: Reverse"];
-  var vB=atts.length<3?'<div class="version-badge">📋 '+vN[atts.length%3]+'</div>':"";
-  var dots='<div class="attempt-dots">';for(var i=0;i<3;i++){var a=atts[i];dots+='<div class="attempt-dot '+(a===undefined?"":(a?"ap":"af"))+'">'+(i+1)+'</div>';}dots+='</div>';
-  document.getElementById("examSub").textContent=cp.label+(cp.isMajor?" 🎓":"");
-  var cn=cp.covers.map(function(id){var l=getLevelById(id);return l?l.name:"";}).join(", ");
-  document.getElementById("examBody").innerHTML='<div class="card" style="text-align:center"><div style="font-size:40px">'+(cp.isMajor?"🎓":"📝")+'</div><div style="font-size:18px;font-weight:800;color:var(--g1);margin:8px 0 3px">'+cp.label+'</div><div style="font-size:14px;color:var(--muted);margin-bottom:10px">Covers: '+cn+'</div>'+vB+dots+'<div style="background:var(--g6);border-radius:10px;padding:11px;margin-bottom:11px;font-size:14px;line-height:1.8;text-align:left">✅ Pass: '+cp.passMin+'/100<br>📋 20 questions<br>⭐ +10 stars if you pass'+(cp.isMajor?"<br>🎓 Certificate if you pass!":"")+(failed?"<br>⚠️ Previous: "+failed.lastScore+"/100":"")+(locked?"<br>🔒 "+cramDone+"/10 cram done":"")+' </div>'+(locked?'<button type="button" class="btn-full" onclick="switchTab(\'cram\')" style="background:var(--amber)">🔥 Go to Cram ('+cramDone+'/10)</button>':'<button type="button" class="btn-full" onclick="startExam(\''+ncp+'\')">Start Exam 开始考试 →</button>')+'</div>';
+  var body=document.getElementById("examBody");
+  var sub=document.getElementById("examSub");
+  var cp=nextExam();
+  if(!cp){
+    sub.textContent = S.graduate ? "You have graduated! 你毕业了！" : "";
+    body.innerHTML='<div class="card" style="text-align:center;padding:34px 20px"><div style="font-size:56px">'+(S.graduate?"🎓":"📚")+'</div><div style="font-size:20px;font-weight:800;color:var(--g1);margin-top:12px">'+(S.graduate?"All exams complete! 全部完成！":"No exams yet")+'</div></div>';
+    return;
+  }
+
+  sub.textContent = cp.labelZh || "";
+  var need = coveredSublevels(cp);
+  var doneCount = need.filter(function(id){return isSLDone(id);}).length;
+  var ready = examReady(cp);
+  var att = (S.examAttempts && S.examAttempts[cp.id]) ? S.examAttempts[cp.id] : [];
+  var failed = S.failedCPs[cp.id];
+  var cramLeft = failed ? Math.max(0, 10 - (failed.cramRounds||0)) : 0;
+
+  var canDo = (cp.canDo||[]).map(function(t){
+    return '<div style="display:flex;gap:9px;align-items:flex-start;padding:6px 0"><span style="color:var(--g2);font-weight:900">✓</span><span style="font-size:15px;color:var(--text);line-height:1.5">'+t+'</span></div>';
+  }).join("");
+
+  var dots='<div class="attempt-dots">';
+  for(var i=0;i<3;i++){var a=att[i];dots+='<div class="attempt-dot '+(a===undefined?"":(a?"ap":"af"))+'">'+(i+1)+'</div>';}
+  dots+='</div>';
+
+  var h='<div class="card">'
+    +'<div style="text-align:center">'
+    +'<div style="font-size:52px">'+(cp.isMajor?"🎓":"📝")+'</div>'
+    +'<div style="font-size:21px;font-weight:900;color:var(--g1);margin:8px 0 3px">'+cp.label+'</div>'
+    +'<div style="font-size:15px;color:var(--muted);margin-bottom:12px">'+(cp.labelZh||"")+'</div>'
+    +dots+'</div>'
+    +'<div style="background:var(--g6);border-radius:13px;padding:14px;margin-bottom:13px;font-size:15px;line-height:1.9">'
+    +'✅ Pass mark: <strong>'+cp.passMin+'/100</strong><br>'
+    +'📋 20 questions from '+cp.level.toUpperCase()+'.'+cp.coversRange[0]+' – '+cp.level.toUpperCase()+'.'+cp.coversRange[1]+'<br>'
+    +'📚 Lessons done: <strong>'+doneCount+' / '+need.length+'</strong>'
+    +(cp.isMajor?'<br>🎓 Printable certificate if you pass!':'')
+    +(failed?'<br>⚠️ Best so far: '+failed.lastScore+'/100':'')
+    +'</div>';
+
+  if(canDo){
+    h+='<div style="background:#fff;border:2px solid var(--g4);border-radius:13px;padding:14px;margin-bottom:13px">'
+      +'<div style="font-size:14px;font-weight:800;color:var(--g1);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">After passing, you can 通过后你能</div>'
+      +canDo+'</div>';
+  }
+
+  if(!ready){
+    var remaining = need.filter(function(id){return !isSLDone(id);});
+    h+='<div style="background:#fff8e1;border:2px solid #ffd54f;border-radius:13px;padding:14px;font-size:15px;color:#8a6a00;line-height:1.7">'
+      +'🔒 Finish these lessons first 先完成这些课程:<br><strong>'
+      +remaining.map(function(id){var s=getSLById(id);return s?s.code:id;}).join(", ")+'</strong></div>'
+      +'<button type="button" class="btn btn-primary" style="width:100%;padding:15px;border-radius:13px;margin-top:12px" onclick="switchTab(\'trail\')">Go to Trail 去学习之路 →</button>';
+  } else if(cramLeft>0){
+    h+='<button type="button" class="btn btn-amber" style="width:100%;padding:15px;border-radius:13px" onclick="switchTab(\'cram\')">🔥 Complete Cram First ('+(10-cramLeft)+'/10)</button>';
+  } else {
+    h+='<button type="button" class="btn btn-primary" style="width:100%;padding:16px;border-radius:13px;font-size:18px" onclick="startExam(\''+cp.id+'\')">Start Exam 开始考试 →</button>';
+  }
+  h+='</div>';
+  body.innerHTML=h;
 }
 function startExam(cpId){if(!S.examAttempts)S.examAttempts={};if(!S.examAttempts[cpId])S.examAttempts[cpId]=[];var ver=S.examAttempts[cpId].length%3;var cp=getCPById(cpId);examState={cpId:cpId,qs:buildExamQs(cp.covers,20,ver),curr:0,score:0,answered:false,wrongQs:[],version:ver};renderExamQ();}
 function renderExamQ(){var qs=examState.qs,curr=examState.curr;if(curr>=qs.length){renderExamResult();return;}var q=qs[curr];examState.answered=false;var oH=q.opts.map(function(o){return '<button type="button" class="quiz-opt" onclick="answerExam(this,\''+o.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\',\''+q.a.replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">'+o+'</button>';}).join("");document.getElementById("examBody").innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;color:var(--muted);font-weight:700">Q '+(curr+1)+'/'+qs.length+'</span><span style="font-size:13px;color:var(--g1);font-weight:700">'+Math.round(examState.score/qs.length*100)+'</span></div><div class="prog-wrap"><div class="prog-fill" style="width:'+(curr/qs.length*100)+'%"></div></div><div class="quiz-q-box" style="margin-top:9px">'+q.q.replace(/\n/g,"<br>")+'</div><div class="quiz-opts" id="eOpts">'+oH+'</div><div class="feedback" id="eFb" style="display:none"></div><button type="button" class="btn-full" id="eNext" onclick="nextExamQ()" style="display:none">Next 下一题 →</button></div>';}
@@ -1763,150 +1863,95 @@ function hideModal(){document.getElementById("modalOverlay").classList.add("hidd
 var hwState={slId:null,qs:[],answers:{},submitted:false};
 
 // Generate exactly 20 homework questions - DIFFERENT from worksheet & test
-function buildHomeworkQs(sl){
-  var qs=[];
-  var vocab=(sl.vocab||[]).slice();
-  var sents=(sl.sentences||[]).slice();
-  var story=sl.story;
-  var seen={};
-  function addQ(q){
-    if(!q||!q.q||!q.a||!q.opts||q.opts.length<2)return;
-    if(seen[q.q])return;
-    // ensure 4 options, pad if needed
-    var o=q.opts.filter(function(x,i,arr){return arr.indexOf(x)===i;});
-    while(o.length<4)o.push("—");
-    q.opts=shuffle(o.slice(0,4));
-    seen[q.q]=true;qs.push(q);
-  }
-
-  // Type 1: Chinese -> English
-  vocab.forEach(function(v){
-    var wrong=vocab.filter(function(x){return x.w!==v.w;}).map(function(x){return x.w;}).slice(0,3);
-    addQ({q:'Which English word means "'+v.zh+'"?',a:v.w,opts:[v.w].concat(wrong)});
-  });
-
-  // Type 2: Complete the example sentence
-  vocab.forEach(function(v){
-    if(!v.eg)return;
-    var words=v.eg.split(' ');
-    var ti=-1;
-    for(var i=0;i<words.length;i++){
-      if(words[i].toLowerCase().replace(/[^a-z]/g,'')===v.w.toLowerCase().replace(/[^a-z]/g,'')){ti=i;break;}
-    }
-    if(ti<0)return;
-    var missing=words[ti];
-    var blanked=words.map(function(w,i){return i===ti?"______":w;}).join(' ');
-    var wrong=vocab.filter(function(x){return x.w!==v.w;}).map(function(x){return x.w;}).slice(0,3);
-    addQ({q:'Complete the sentence: '+blanked,a:missing,opts:[missing].concat(wrong)});
-  });
-
-  // Type 3: Word type
-  var allTypes=["Noun","Verb","Adjective","Vowel","Greeting","Polite","Concept","Answer","Adverb","Pronoun","Article"];
-  vocab.forEach(function(v){
-    if(!v.type)return;
-    var wrong=allTypes.filter(function(t){return t!==v.type;}).slice(0,3);
-    addQ({q:'What type of word is "'+v.w+'"?',a:v.type,opts:[v.type].concat(wrong)});
-  });
-
-  // Type 4: Which word starts the sentence
-  sents.forEach(function(s){
-    if(!s.en||s.en.length<3)return;
-    addQ({q:'Which word STARTS this sentence: "'+s.zh+'"?',a:s.en[0],opts:[s.en[0]].concat(s.en.slice(1,4))});
-  });
-
-  // Type 5: How many words in the sentence
-  sents.forEach(function(s){
-    if(!s.en||s.en.length<3)return;
-    var n=s.en.length;
-    addQ({q:'How many words are in: "'+s.en.join(' ')+'"?',a:String(n),opts:[String(n),String(n+1),String(n-1),String(n+2)]});
-  });
-
-  // Type 6: Story vocabulary
-  if(story&&story.words){
-    var sw=Object.keys(story.words);
-    sw.forEach(function(w){
-      var meaning=story.words[w];
-      var other=sw.filter(function(k){return k!==w;}).map(function(k){return story.words[k];}).slice(0,3);
-      addQ({q:'In the story, what does "'+w+'" mean?',a:meaning,opts:[meaning].concat(other)});
-    });
-  }
-
-  // Type 7: Correct spelling
-  vocab.forEach(function(v){
-    if(v.w.length<4)return;
-    var correct=v.w;
-    var s1=correct.slice(1)+correct[0];
-    var s2=correct.split('').reverse().join('');
-    var s3=correct.slice(0,-1);
-    addQ({q:'Which is the CORRECT spelling for "'+v.zh+'"?',a:correct,opts:[correct,s1,s2,s3]});
-  });
-
-  // Type 8: English -> Chinese (fallback filler)
-  vocab.forEach(function(v){
-    var wrong=vocab.filter(function(x){return x.w!==v.w;}).map(function(x){return x.zh;}).slice(0,3);
-    addQ({q:'What does "'+v.w+'" mean in Chinese?',a:v.zh,opts:[v.zh].concat(wrong)});
-  });
-
-  // Type 9: First letter
-  vocab.forEach(function(v){
-    if(!v.w||v.w.length<2)return;
-    var fl=v.w[0].toUpperCase();
-    var others=["B","M","T","K","P","S","R"].filter(function(x){return x!==fl;}).slice(0,3);
-    addQ({q:'Which letter does "'+v.w+'" start with?',a:fl,opts:[fl].concat(others)});
-  });
-
-  var out=shuffle(qs);
-  return out.slice(0,Math.min(20,out.length));
-}
 
 function renderHomework(){
   var body=document.getElementById("homeworkBody");
-  var completed=SUBLEVELS.filter(function(sl){
-    if(sl.type==="coming_soon")return false;
-    if(isSLDone(sl.id))return true;
-    var st=S.slState&&S.slState[sl.id];
-    return !!(st&&(st.testPassed||st.testDone));
-  });
-  if(!completed.length){
-    body.innerHTML='<div class="card" style="text-align:center;padding:36px 20px">'
-      +'<div style="font-size:56px">📚</div>'
-      +'<div style="font-size:19px;font-weight:800;color:var(--g1);margin-top:12px">No homework yet! 还没有作业</div>'
-      +'<div style="font-size:16px;color:var(--muted);margin-top:8px;line-height:1.7">Complete a lesson on the Trail first.<br>先完成一课，作业就会解锁。</div>'
-      +'<button type="button" class="btn btn-primary" style="width:100%;padding:14px;border-radius:13px;margin-top:16px" onclick="switchTab(\'trail\')">Go to Trail →</button>'
-      +'</div>';
+  if(!HW_TOPICS.length){
+    body.innerHTML='<div class="card" style="text-align:center;padding:34px 20px"><div style="font-size:52px">📚</div><div style="font-size:18px;color:var(--muted);margin-top:12px">Loading homework...</div></div>';
     return;
   }
-  var html='<div style="font-size:15px;color:var(--muted);margin-bottom:12px">'+completed.length+' topic(s) unlocked · Choose one</div>';
-  completed.forEach(function(sl){
-    var best=S.hwScores[sl.id];
-    var bestHtml=best!==undefined
-      ?'<div style="font-size:14px;font-weight:800;color:'+(best>=16?"var(--g1)":best>=12?"var(--amber)":"var(--red)")+';margin-top:2px">⭐ Best: '+best+'/20</div>'
-      :'<div style="font-size:14px;color:var(--muted);margin-top:2px">Not attempted yet</div>';
-    html+='<div class="hw-card">'
-      +'<div class="hw-icon">'+(sl.icon||"📖")+'</div>'
+  var unlocked=HW_TOPICS.filter(function(t){return isSLDone(t.unlockAfter);});
+  var locked=HW_TOPICS.filter(function(t){return !isSLDone(t.unlockAfter);});
+
+  var h='<div style="font-size:16px;color:var(--muted);margin-bottom:14px;line-height:1.6">Grammar practice by topic. Each topic has 20 questions and a rule explanation.<br>按语法主题练习，每个主题20题。</div>';
+
+  if(!unlocked.length){
+    h+='<div class="card" style="text-align:center;padding:30px 20px">'
+      +'<div style="font-size:52px">🔒</div>'
+      +'<div style="font-size:19px;font-weight:800;color:var(--g1);margin-top:12px">Complete more lessons first</div>'
+      +'<div style="font-size:16px;color:var(--muted);margin-top:8px;line-height:1.6">Grammar topics unlock as you progress.<br>完成课程后解锁语法主题。</div>'
+      +'<button type="button" class="btn btn-primary" style="width:100%;padding:15px;border-radius:13px;margin-top:16px" onclick="switchTab(\'trail\')">Go to Trail →</button></div>';
+  }
+
+  unlocked.forEach(function(t){
+    var best=S.hwScores[t.id];
+    var bestHtml = best!==undefined
+      ? '<div style="font-size:14px;font-weight:800;color:'+(best>=16?"var(--g1)":best>=12?"var(--amber)":"var(--red)")+';margin-top:3px">⭐ Best: '+best+'/20</div>'
+      : '<div style="font-size:14px;color:var(--muted);margin-top:3px">Not tried yet</div>';
+    h+='<div class="hw-card" style="align-items:flex-start">'
+      +'<div class="hw-icon">'+t.icon+'</div>'
       +'<div style="flex:1">'
-      +'<div style="font-size:17px;font-weight:800;color:var(--text)">'+sl.code+' '+sl.title+'</div>'
-      +'<div style="font-size:14px;color:var(--muted)">'+sl.titleZh+'</div>'
+      +'<div style="font-size:17px;font-weight:800;color:var(--text)">'+t.title+'</div>'
+      +'<div style="font-size:14px;color:var(--muted)">'+t.titleZh+'</div>'
       +bestHtml
-      +'<div style="display:flex;gap:7px;margin-top:9px">'
-      +'<button type="button" class="btn btn-primary" style="padding:9px 12px;border-radius:10px;font-size:15px;flex:1" onclick="startHomework(\''+sl.id+'\')">💻 Online 在线</button>'
-      +'<button type="button" class="btn btn-secondary" style="padding:9px 12px;border-radius:10px;font-size:15px;flex:1" onclick="openPrintPage(\''+sl.id+'\')">🖨️ Print 打印</button>'
+      +'<div style="display:flex;gap:7px;margin-top:11px;flex-wrap:wrap">'
+      +'<button type="button" class="btn btn-secondary" style="padding:10px 12px;border-radius:10px;font-size:14px;flex:1;min-width:88px" onclick="showHwRule(\''+t.id+'\')">📐 Rules 规则</button>'
+      +'<button type="button" class="btn btn-primary" style="padding:10px 12px;border-radius:10px;font-size:14px;flex:1;min-width:88px" onclick="startHomework(\''+t.id+'\')">💻 Practise</button>'
+      +'<button type="button" class="btn btn-secondary" style="padding:10px 12px;border-radius:10px;font-size:14px;flex:1;min-width:88px" onclick="openPrintPage(\''+t.id+'\')">🖨️ Print</button>'
       +'</div></div></div>';
   });
-  body.innerHTML=html;
+
+  if(locked.length){
+    h+='<div style="font-size:15px;font-weight:800;color:var(--muted);margin:18px 0 9px;text-transform:uppercase;letter-spacing:1px">Locked 未解锁</div>';
+    locked.forEach(function(t){
+      var need=getSLById(t.unlockAfter);
+      h+='<div class="hw-card" style="opacity:.55;cursor:default">'
+        +'<div class="hw-icon">🔒</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-size:16px;font-weight:800;color:var(--text)">'+t.title+'</div>'
+        +'<div style="font-size:14px;color:var(--muted)">Unlocks after '+(need?need.code:t.unlockAfter)+'</div>'
+        +'</div></div>';
+    });
+  }
+  body.innerHTML=h;
+}
+
+function getHwTopic(id){
+  for(var i=0;i<HW_TOPICS.length;i++){ if(HW_TOPICS[i].id===id) return HW_TOPICS[i]; }
+  return null;
+}
+
+function showHwRule(id){
+  var t=getHwTopic(id); if(!t) return;
+  document.getElementById("homeworkBody").innerHTML='<div class="card">'
+    +'<div style="font-size:20px;font-weight:900;color:var(--g1)">'+t.icon+' '+t.title+'</div>'
+    +'<div style="font-size:15px;color:var(--muted);margin-bottom:14px">'+t.titleZh+'</div>'
+    +'<div style="background:var(--g7);border-radius:13px;padding:16px;white-space:pre-wrap;font-size:16px;line-height:1.85;color:var(--text)">'+t.rule+'</div>'
+    +'<div style="background:var(--g6);border-radius:13px;padding:14px;margin-top:12px;font-size:15px;line-height:1.8;color:var(--text)">'+t.ruleZh+'</div>'
+    +'<div class="nav-row" style="margin-top:14px">'
+    +'<button type="button" class="btn btn-secondary" onclick="renderHomework()">← Back 返回</button>'
+    +'<button type="button" class="btn btn-primary" onclick="startHomework(\''+t.id+'\')">Practise Now 开始练习</button>'
+    +'</div></div>';
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function buildHomeworkQs(topic){
+  return shuffle(topic.questions).slice(0,20).map(function(q){
+    return {q:q.q, a:q.a, opts:shuffle(q.opts.slice()), why:q.why||""};
+  });
 }
 
 // ── ONLINE HOMEWORK ──
-function startHomework(slId){
-  var sl=getSLById(slId);if(!sl)return;
-  var qs=buildHomeworkQs(sl);
-  if(!qs.length){showModal("📚","No questions available","This topic has no homework questions yet.",[{label:"OK",fn:hideModal}]);return;}
-  hwState={slId:slId,qs:qs,answers:{},submitted:false};
+function startHomework(topicId){
+  var t=getHwTopic(topicId);if(!t)return;
+  var qs=buildHomeworkQs(t);
+  if(!qs.length){showModal("📚","No questions yet","This topic has no questions.",[{label:"OK",fn:hideModal}]);return;}
+  hwState={slId:topicId,qs:qs,answers:{},submitted:false};
   renderHomeworkQuiz();
 }
 
 function renderHomeworkQuiz(){
-  var sl=getSLById(hwState.slId);
+  var sl=getHwTopic(hwState.slId)||{code:"",title:"Homework"};
   var qs=hwState.qs;
   var total=qs.length;
   var best=S.hwScores[hwState.slId];
@@ -1976,7 +2021,7 @@ function submitHomework(){
     if(!isRight){
       var note=document.createElement("div");
       note.style.cssText="font-size:14px;color:var(--red);font-weight:700;margin-top:6px;padding:6px 9px;background:#fde8e8;border-radius:7px";
-      note.textContent="✗ You chose: "+(hwState.answers[i]||"nothing")+" · Correct: "+q.a;
+      note.innerHTML="✗ You chose: <strong>"+(hwState.answers[i]||"nothing")+"</strong> · Correct: <strong>"+q.a+"</strong>"+(q.why?'<br><span style="font-weight:600;color:#8a6a00">💡 '+q.why+'</span>':"");
       qDiv.appendChild(note);
     }
   });
@@ -2000,15 +2045,14 @@ function submitHomework(){
 // ── PRINTABLE HOMEWORK PAGE ──
 var printState={slId:null,qs:[],answers:{}};
 
-function openPrintPage(slId){
-  var sl=getSLById(slId);if(!sl)return;
-  var qs=buildHomeworkQs(sl);
-  printState={slId:slId,qs:qs,answers:{}};
+function openPrintPage(topicId){
+  var t=getHwTopic(topicId);if(!t)return;
+  printState={slId:topicId,qs:buildHomeworkQs(t),answers:{}};
   renderPrintPage();
 }
 
 function renderPrintPage(){
-  var sl=getSLById(printState.slId);
+  var sl=getHwTopic(printState.slId)||{code:"",title:"Homework"};
   var qs=printState.qs;
   var total=qs.length;
   // Answer entry grid: A B C D per question
@@ -2099,7 +2143,7 @@ function checkPrintAnswers(){
 }
 
 function doPrintHomework(){
-  var sl=getSLById(printState.slId);
+  var sl=getHwTopic(printState.slId)||{code:"",title:"Homework"};
   var qs=printState.qs;
   var name=S.name||"________________";
   var today=new Date().toLocaleDateString("en-SG");
@@ -2171,6 +2215,12 @@ loadS();
 
 /* Boot: load manifest, then the current level, then render */
 loadManifest()
+  .then(function(){
+    return Promise.all([
+      fetch(contentPath("exams")).then(function(r){return r.json();}).then(function(d){ CHECKPOINTS = d; }),
+      fetch(contentPath("homework")).then(function(r){return r.json();}).then(function(d){ HW_TOPICS = d; })
+    ]);
+  })
   .then(function(){
     var lvl = levelOf(S.currentSL || "p1_1");
     return loadLevel(lvl);
