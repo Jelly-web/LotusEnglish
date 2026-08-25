@@ -294,6 +294,7 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:8px;pa
 @keyframes recPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
 #oralRecBtn:disabled{opacity:.45;cursor:not-allowed}
 
+@keyframes loadSlide{0%{background-position:0% 0}100%{background-position:200% 0}}
 </style>
 </head>
 <body>
@@ -333,6 +334,7 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:8px;pa
   <span class="star-item">🎯 <span id="stageLabel">P1</span></span>
 </div>
 
+<div id="loadingBar" style="display:none;position:fixed;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--g2),var(--g4),var(--g2));background-size:200% 100%;animation:loadSlide 1s linear infinite;z-index:300"></div>
 <div class="tabs" id="tabBar">
   <button class="tab active" onclick="switchTab('trail')"><span class="tab-icon">🗺️</span>Trail<br>路程</button>
   <button class="tab" id="tabLesson" onclick="switchTab('lesson')"><span class="tab-icon">📅</span>Lesson<br>课程</button>
@@ -503,13 +505,70 @@ function doGet(e){if(e.parameter.action==="ping"){return ContentService.createTe
   </div>
 </div>
 
-<script src="curriculum.js"></script>
-<script>if (typeof SUBLEVELS === "undefined") {
-  document.body.innerHTML = '<div style="padding:40px 24px;font-family:sans-serif;text-align:center"><div style="font-size:56px">\u26a0\ufe0f</div><h2 style="color:#1a6b3c;margin:12px 0 8px;font-size:24px">Content file missing</h2><p style="color:#5a8a6e;font-size:17px;line-height:1.7">curriculum.js could not load.<br>Make sure <strong>curriculum.js</strong> is in the same folder as index.html.<br><br>\u8bfe\u7a0b\u6587\u4ef6\u672a\u52a0\u8f7d\u3002</p><button onclick="location.reload()" style="margin-top:20px;background:#2d9b5a;color:#fff;border:none;border-radius:12px;padding:15px 30px;font-size:18px;font-weight:800;cursor:pointer">Reload \u91cd\u65b0\u52a0\u8f7d</button></div>';
-  throw new Error("curriculum.js not loaded");
+<script src="config.js"></script>
+<script>if (typeof LEVEL_META === "undefined") {
+  document.body.innerHTML = '<div style="padding:40px 24px;font-family:sans-serif;text-align:center"><div style="font-size:56px">\u26a0\ufe0f</div><h2 style="color:#1a6b3c;margin:12px 0 8px;font-size:24px">config.js missing</h2><p style="color:#5a8a6e;font-size:17px;line-height:1.7">Make sure <strong>config.js</strong> and the <strong>content</strong> folder are uploaded next to index.html.</p><button onclick="location.reload()" style="margin-top:20px;background:#2d9b5a;color:#fff;border:none;border-radius:12px;padding:15px 30px;font-size:18px;font-weight:800;cursor:pointer">Reload \u91cd\u65b0\u52a0\u8f7d</button></div>';
+  throw new Error("config.js not loaded");
 }
 
-var APP_VERSION="2.2.2";
+/* ══════════════════════════════════════════════════
+   CONTENT LOADER — loads content/<level>.json on demand
+   Progress is untouched: same localStorage key, same IDs
+   ══════════════════════════════════════════════════ */
+var SUBLEVELS = [];        // manifest (lightweight, all 140)
+var LOADED = {};           // level -> true once full content is in
+var CONTENT = {};          // sublevel id -> full content object
+
+function contentPath(f){ return "content/" + f + ".json?v=" + (window.CONTENT_CACHE_BUST || "1"); }
+
+function loadManifest(){
+  return fetch(contentPath("manifest"))
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(list){ SUBLEVELS = list; return list; });
+}
+
+function loadLevel(level){
+  if(LOADED[level]) return Promise.resolve();
+  return fetch(contentPath(level))
+    .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
+    .then(function(list){
+      list.forEach(function(sl){
+        CONTENT[sl.id] = sl;
+        // merge full content into the manifest entry so existing code sees everything
+        for(var i=0;i<SUBLEVELS.length;i++){
+          if(SUBLEVELS[i].id === sl.id){
+            SUBLEVELS[i] = Object.assign({}, SUBLEVELS[i], sl);
+            break;
+          }
+        }
+      });
+      LOADED[level] = true;
+    });
+}
+
+function levelOf(slId){ return String(slId).split("_")[0]; }
+
+/* Ensure a sublevel's content is loaded, then run cb */
+function withContent(slId, cb){
+  var lvl = levelOf(slId);
+  if(LOADED[lvl]){ cb(); return; }
+  showLoading(true);
+  loadLevel(lvl)
+    .then(function(){ showLoading(false); cb(); })
+    .catch(function(e){
+      showLoading(false);
+      showModal("\u26a0\ufe0f","Could not load lesson","Check your internet connection and try again.\n\u8bf7\u68c0\u67e5\u7f51\u7edc\u8fde\u63a5\u3002",[{label:"OK",fn:hideModal}]);
+    });
+}
+
+function showLoading(on){
+  var el = document.getElementById("loadingBar");
+  if(el) el.style.display = on ? "block" : "none";
+}
+
+
+
+var APP_VERSION="3.0.0";
 
 
 const HABITS_DATA=[{"id": "h1", "text": "Complete today's app lesson", "textZh": "完成今天的课程", "icon": "📱"}, {"id": "h2", "text": "Read one English sign or label out loud", "textZh": "大声朗读一个英文标志或标签", "icon": "🔤"}, {"id": "h3", "text": "Watch 15 mins of English TV with subtitles", "textZh": "看15分钟带字幕的英语电视", "icon": "📺"}, {"id": "h4", "text": "Send one WhatsApp message in English", "textZh": "发一条英文WhatsApp消息", "icon": "💬"}, {"id": "h5", "text": "Learn one new word and use it today", "textZh": "学一个新单词并在今天使用它", "icon": "⭐"}, {"id": "h6", "text": "Read one English sentence from a notice or sign", "textZh": "从通知或标志中读一个英文句子", "icon": "📋"}, {"id": "h7", "text": "Have a 5-minute English conversation", "textZh": "进行5分钟的英语对话", "icon": "🗣️"}];
@@ -628,7 +687,11 @@ function renderTrail(){
     });
   });
 }
-function openSL(id){
+function openSL(slId){
+  withContent(slId, function(){ _openSL(slId); });
+}
+
+function _openSL(id){
   var sl=getSLById(id);
   if(!sl)return;
   if(sl.type==="coming_soon"){showModal("🔒","Coming Soon! 即将推出！","This lesson will be added in the next update.",[{label:"OK",fn:hideModal}]);return;}
@@ -703,114 +766,6 @@ function renderStepIntro(sl){
   document.getElementById("lessonContent").innerHTML='<div class="card" style="text-align:center">'+vocHtml+'</div>'+comicHtml+'<button type="button" class="btn-full" onclick="finishIntroStep()">Got it! Next → 明白了！</button>';
 }
 
-function renderStepListening(sl){
-  var qs=sl.listening;
-  if(!qs||!qs.length){var st=getSLState(S.currentSL);st.listeningDone=true;saveS();renderLessonScreen();return;}
-  var html='<div class="card"><div class="grammar-title">🎧 Listening Practice 听力练习</div>'
-    +'<div style="font-size:14px;color:var(--muted);margin-bottom:14px">Tap Play to hear, then answer each question. 点播放键听，然后回答。</div>';
-  qs.forEach(function(q,i){
-    var optsH=q.opts.map(function(o){
-      return '<button type="button" class="test-opt" data-qi="'+i+'" data-val="'+o.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">'+o+'</button>';
-    }).join("");
-    html+='<div class="ws-question">'
-      +'<div class="ws-q-num">Q'+(i+1)+'</div>'
-      +'<div style="display:flex;gap:8px;margin-bottom:8px">'
-      +'<button type="button" class="speak-btn" data-audio="'+q.audio.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">🔊 Play 播放</button>'
-      +'<button type="button" class="speak-btn slow-btn" data-audio-slow="'+q.audio.replace(/&/g,"&amp;").replace(/"/g,"&quot;")+'">🐢 Slow 慢速</button>'
-      +'</div>'
-      +'<div class="ws-q-text">'+q.q+'</div>'
-      +'<div class="test-opts">'+optsH+'</div>'
-      +'</div>';
-  });
-  html+='<button type="button" class="test-submit-btn" id="listenSubmitBtn" onclick="submitListening()" disabled>Submit 提交 →</button>'
-    +'<div class="feedback" id="listenFb" style="display:none;margin-top:9px"></div></div>';
-  document.getElementById("lessonContent").innerHTML=html;
-  // Attach play buttons
-  document.getElementById("lessonContent").querySelectorAll("[data-audio]").forEach(function(btn){
-    btn.addEventListener("click",function(){speakText(btn.getAttribute("data-audio"),0.85);});
-  });
-  document.getElementById("lessonContent").querySelectorAll("[data-audio-slow]").forEach(function(btn){
-    btn.addEventListener("click",function(){speakText(btn.getAttribute("data-audio-slow"),0.55);});
-  });
-  // Attach option buttons
-  var listenSels={};
-  document.getElementById("lessonContent").querySelectorAll(".test-opt").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      var qi=parseInt(btn.getAttribute("data-qi"));
-      var val=btn.getAttribute("data-val");
-      btn.closest(".test-opts").querySelectorAll(".test-opt").forEach(function(b){b.classList.remove("sel-t");});
-      btn.classList.add("sel-t");
-      listenSels[qi]=val;
-      var lb=document.getElementById("listenSubmitBtn");
-      if(lb)lb.disabled=Object.keys(listenSels).length<qs.length;
-    });
-  });
-  // Store listenSels on window so submitListening can access
-  window._listenSels=listenSels;
-  window._listenQs=qs;
-}
-function submitListening(){
-  var qs=window._listenQs||[];
-  var listenSels=window._listenSels||{};
-  var correct=0;
-  qs.forEach(function(q,i){if(listenSels[i]===q.a)correct++;});
-  var passed=correct>=Math.ceil(qs.length*0.6);
-  var fb=document.getElementById("listenFb");fb.style.display="block";
-  fb.className="feedback "+(passed?"good":"bad");
-  fb.textContent=passed?"✅ "+correct+"/"+qs.length+" correct! Well done! 很好！":"❌ "+correct+"/"+qs.length+" correct. Listen again and try! 再听一次！";
-  if(passed){
-    addStar(2);
-    var st=getSLState(S.currentSL);st.listeningDone=true;saveS();
-    setTimeout(function(){renderLessonScreen();},1500);
-  } else {
-    // Allow retry
-    document.getElementById("listenSubmitBtn").disabled=false;
-    document.getElementById("listenSubmitBtn").textContent="Try Again 再试 →";
-  }
-}
-
-function renderStepOral(sl){
-  var passages=sl.oral;
-  if(!passages||!passages.length){
-    var st=getSLState(S.currentSL);st.oralDone=true;saveS();renderLessonScreen();return;
-  }
-  var p=passages[0];
-  var html='<div class="card">'
-    +'<div class="grammar-title">🗣️ Oral Practice 口语练习</div>'
-    +'<div style="font-size:15px;color:var(--muted);margin-bottom:12px">Read aloud clearly. Tap 🔊 to hear the correct pronunciation first. 大声朗读。先点🔊听正确发音。</div>'
-    +'<div style="background:var(--g7);border-radius:12px;padding:14px;margin-bottom:12px;font-size:19px;line-height:1.9;color:var(--text);font-weight:600">'+p.text+'</div>'
-    +'<div class="speak-row" style="margin-bottom:14px">'
-    +'<button type="button" class="speak-btn" onclick="speakText(\''+p.text.replace(/\'/g,"\\'")+'\',0.85)">🔊 Hear it first!</button>'
-    +'<button type="button" class="speak-btn slow-btn" onclick="speakText(\''+p.text.replace(/\'/g,"\\'")+'\',0.55)">🐢 Slow</button>'
-    +'</div>'
-    +'<div style="font-size:16px;font-weight:800;color:var(--g1);margin-bottom:10px">Self-check 自我检查:</div>'
-    +'<div id="oralChecklist">'
-    +['I read at a steady pace (not too fast) 我读得不太快','I paused at commas and full stops 我在逗号和句号处停顿','I said each word clearly 我清楚地说出每个词','I understood what I was reading 我理解了所读内容'].map(function(item,i){
-      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--g6);cursor:pointer">'
-        +'<input type="checkbox" id="oc'+i+'" style="width:20px;height:20px;accent-color:var(--g2)" onchange="checkOralDone()">'
-        +'<span style="font-size:16px;color:var(--text)">'+item+'</span></label>';
-    }).join("")
-    +'</div>'
-    +'<button type="button" class="btn-full" id="oralDoneBtn" onclick="finishOralStep()" disabled style="margin-top:12px">Done! ✓ 完成！</button>'
-    +'</div>';
-  document.getElementById("lessonContent").innerHTML=html;
-}
-
-function checkOralDone(){
-  var all=true;
-  for(var i=0;i<4;i++){var cb=document.getElementById("oc"+i);if(cb&&!cb.checked){all=false;break;}}
-  var btn=document.getElementById("oralDoneBtn");
-  if(btn)btn.disabled=!all;
-}
-
-function finishOralStep(){
-  addStar(2);
-  var st=getSLState(S.currentSL);st.oralDone=true;saveS();
-  renderLessonScreen();
-}
-
-
-/* Hide the target word anywhere it appears in hints/examples */
 function maskAnswer(text,answer){
   if(!text||!answer)return text||"";
   var esc=String(answer).replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
@@ -2213,11 +2168,28 @@ function migrateCompletions(){
 }
 
 loadS();
-migrateCompletions();
+
+/* Boot: load manifest, then the current level, then render */
+loadManifest()
+  .then(function(){
+    var lvl = levelOf(S.currentSL || "p1_1");
+    return loadLevel(lvl);
+  })
+  .then(function(){
+    bootApp();
+  })
+  .catch(function(e){
+    document.body.innerHTML = '<div style="padding:40px 24px;font-family:sans-serif;text-align:center"><div style="font-size:56px">\u26a0\ufe0f</div><h2 style="color:#1a6b3c;font-size:24px;margin:12px 0 8px">Could not load content</h2><p style="color:#5a8a6e;font-size:17px;line-height:1.7">The <strong>content</strong> folder could not be reached.<br>Make sure it is uploaded next to index.html.<br><br>\u8bfe\u7a0b\u6587\u4ef6\u5939\u672a\u627e\u5230\u3002</p><button onclick="location.reload()" style="margin-top:20px;background:#2d9b5a;color:#fff;border:none;border-radius:12px;padding:15px 30px;font-size:18px;font-weight:800;cursor:pointer">Reload \u91cd\u65b0\u52a0\u8f7d</button></div>';
+  });
+
+function bootApp(){
+  migrateCompletions();
 if(S.onboardDone&&!S.startDate)S.startDate=todayStr();
 updateStreak();updateHeader();initOnboard();
 renderTrail();renderHabits();renderResources();
 if(window.speechSynthesis)window.speechSynthesis.getVoices();
+}
+
 
 </script>
 </body>
