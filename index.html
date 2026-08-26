@@ -295,6 +295,13 @@ textarea.import-box{width:100%;border:1.5px solid var(--g4);border-radius:8px;pa
 #oralRecBtn:disabled{opacity:.45;cursor:not-allowed}
 
 @keyframes loadSlide{0%{background-position:0% 0}100%{background-position:200% 0}}
+/* ATTEMPT HISTORY */
+.att-row{display:flex;align-items:center;background:#fff;border-radius:11px;padding:11px 13px;margin-bottom:7px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.att-row:hover{border-color:var(--g3);transform:translateY(-1px)}
+.hist-q{border-radius:12px;padding:14px;margin-bottom:10px;border:2px solid transparent}
+.hist-q.hist-ok{background:#f0fbf4;border-color:var(--g3)}
+.hist-q.hist-no{background:#fff5f5;border-color:var(--red)}
+
 </style>
 </head>
 <body>
@@ -614,7 +621,7 @@ function showLoading(on){
 
 
 
-var APP_VERSION="3.6.1";
+var APP_VERSION="3.7.0";
 
 
 const HABITS_DATA=[{"id": "h1", "text": "Complete today's app lesson", "textZh": "完成今天的课程", "icon": "📱"}, {"id": "h2", "text": "Read one English sign or label out loud", "textZh": "大声朗读一个英文标志或标签", "icon": "🔤"}, {"id": "h3", "text": "Watch 15 mins of English TV with subtitles", "textZh": "看15分钟带字幕的英语电视", "icon": "📺"}, {"id": "h4", "text": "Send one WhatsApp message in English", "textZh": "发一条英文WhatsApp消息", "icon": "💬"}, {"id": "h5", "text": "Learn one new word and use it today", "textZh": "学一个新单词并在今天使用它", "icon": "⭐"}, {"id": "h6", "text": "Read one English sentence from a notice or sign", "textZh": "从通知或标志中读一个英文句子", "icon": "📋"}, {"id": "h7", "text": "Have a 5-minute English conversation", "textZh": "进行5分钟的英语对话", "icon": "🗣️"}];
@@ -632,7 +639,7 @@ var S={
   vocabLevelId:"p1",vocabIdx:0,
   graduate:false,studyDays:[1,3,5],
   lessonLog:{},streak:0,startDate:null,onboardDone:false,
-  slState:{},habitLog:{},habitStreak:0,sheetsUrl:"",hwScores:{},appVersion:"",
+  slState:{},habitLog:{},habitStreak:0,sheetsUrl:"",hwScores:{},appVersion:"",attemptHistory:{},
 };
 function loadS(){try{var r=localStorage.getItem(SK);if(r)S=Object.assign({},S,JSON.parse(r));}catch(e){}}
 function saveS(){try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){}}
@@ -751,6 +758,101 @@ function _openSL(id){
   if(sl.type==="coming_soon"){showModal("🔒","Coming Soon! 即将推出！","This lesson will be added in the next update.",[{label:"OK",fn:hideModal}]);return;}
   S.currentSL=id;saveS();updateHeader();switchTab("lesson");
 }
+
+/* ══════════════════════════════════════════
+   ATTEMPT HISTORY — keeps the last 3 attempts
+   ══════════════════════════════════════════ */
+function saveAttempt(key, qs, answers, correct, total){
+  if(!S.attemptHistory) S.attemptHistory = {};
+  if(!S.attemptHistory[key]) S.attemptHistory[key] = [];
+  var rec = {
+    date: new Date().toLocaleDateString("en-SG", {day:"numeric", month:"short"}),
+    time: new Date().toLocaleTimeString("en-SG", {hour:"2-digit", minute:"2-digit", hour12:false}),
+    score: correct,
+    total: total,
+    qs: qs.map(function(q, i){
+      var given = answers[i];
+      return { q:q.q, a:q.a, given:(given===undefined?"":given), ok:(given===q.a), why:(q.why||"") };
+    })
+  };
+  S.attemptHistory[key].unshift(rec);          // newest first
+  if(S.attemptHistory[key].length > 3) S.attemptHistory[key] = S.attemptHistory[key].slice(0,3);
+  saveS();
+}
+
+function getAttempts(key){
+  return (S.attemptHistory && S.attemptHistory[key]) ? S.attemptHistory[key] : [];
+}
+
+/* A compact list of past attempts, tappable */
+function attemptListHtml(key, backFn){
+  var list = getAttempts(key);
+  if(!list.length) return "";
+  var h = '<div style="background:var(--g6);border-radius:13px;padding:14px;margin-bottom:14px">'
+    + '<div style="font-size:15px;font-weight:800;color:var(--g1);margin-bottom:9px">📊 Recent attempts 最近记录</div>';
+  list.forEach(function(r, i){
+    var pct = Math.round(r.score / r.total * 100);
+    var col = pct>=80 ? "var(--g1)" : pct>=60 ? "var(--amber)" : "var(--red)";
+    h += '<div class="att-row" onclick="showAttempt(\'' + key + '\',' + i + ',\'' + backFn + '\')">'
+      + '<div style="flex:1">'
+      + '<div style="font-size:15px;font-weight:800;color:var(--text)">'
+      + (i===0 ? "Latest 最新" : (i+1) + " attempts ago") + '</div>'
+      + '<div style="font-size:13px;color:var(--muted)">' + r.date + ' · ' + r.time + '</div>'
+      + '</div>'
+      + '<div style="text-align:right;margin-right:8px">'
+      + '<div style="font-size:19px;font-weight:900;color:' + col + '">' + r.score + '/' + r.total + '</div>'
+      + '<div style="font-size:12px;color:var(--muted)">' + pct + '%</div>'
+      + '</div>'
+      + '<div style="font-size:20px;color:var(--g3)">›</div>'
+      + '</div>';
+  });
+  h += '<div style="font-size:13px;color:var(--muted);margin-top:8px">Tap an attempt to see your answers 点击查看答案</div></div>';
+  return h;
+}
+
+/* Full detail of one attempt */
+function showAttempt(key, i, backFn){
+  var list = getAttempts(key);
+  var r = list[i];
+  if(!r) return;
+  var pct = Math.round(r.score / r.total * 100);
+  var col = pct>=80 ? "var(--g1)" : pct>=60 ? "var(--amber)" : "var(--red)";
+
+  var qH = r.qs.map(function(q, n){
+    var body = '<div class="hist-q ' + (q.ok ? "hist-ok" : "hist-no") + '">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+      + '<span style="font-size:13px;font-weight:700;color:var(--muted)">Q' + (n+1) + '</span>'
+      + '<span style="font-size:17px">' + (q.ok ? "✅" : "❌") + '</span>'
+      + '</div>'
+      + '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.5">' + q.q.replace(/\n/g,"<br>") + '</div>';
+    if(q.ok){
+      body += '<div style="font-size:15px;color:var(--g1);font-weight:800">Your answer: ' + q.given + ' ✓</div>';
+    } else {
+      body += '<div style="font-size:15px;color:var(--red);font-weight:800">You chose: ' + (q.given || "nothing") + '</div>'
+        + '<div style="font-size:15px;color:var(--g1);font-weight:800;margin-top:3px">Correct: ' + q.a + '</div>';
+      if(q.why) body += '<div style="font-size:14px;color:#8a6a00;background:#fff8e1;border-radius:8px;padding:8px 10px;margin-top:7px">💡 ' + q.why + '</div>';
+    }
+    return body + '</div>';
+  }).join("");
+
+  var target = document.getElementById("lessonContent") || document.getElementById("homeworkBody");
+  // choose the right container based on which screen is showing
+  var onLesson = document.getElementById("screen-lesson") && document.getElementById("screen-lesson").classList.contains("active");
+  target = onLesson ? document.getElementById("lessonContent") : document.getElementById("homeworkBody");
+
+  target.innerHTML = '<div class="card">'
+    + '<button type="button" class="btn btn-secondary" style="width:100%;padding:12px;border-radius:11px;margin-bottom:13px" onclick="' + backFn + '">← Back 返回</button>'
+    + '<div style="text-align:center;margin-bottom:14px">'
+    + '<div style="font-size:14px;color:var(--muted)">' + r.date + ' · ' + r.time + '</div>'
+    + '<div style="font-size:40px;font-weight:900;color:' + col + '">' + r.score + ' / ' + r.total + '</div>'
+    + '<div style="font-size:15px;color:var(--muted)">' + pct + '% · ' + r.score + ' correct, ' + (r.total - r.score) + ' wrong</div>'
+    + '</div>'
+    + qH
+    + '<button type="button" class="btn btn-secondary" style="width:100%;padding:13px;border-radius:12px;margin-top:8px" onclick="' + backFn + '">← Back 返回</button>'
+    + '</div>';
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
 function getSLState(id){
   if(!S.slState)S.slState={};
   if(!S.slState[id])S.slState[id]={introDone:false,grammarDone:false,sentDone:false,storyDone:false,wsDone:false,wsAttempts:[],testDone:false,testAttempts:[],testPassed:false};
@@ -1458,7 +1560,8 @@ function renderStepTest(sl){
     }).join("");
     return '<div class="test-question" id="tq'+qi+'"><div class="test-q-num">Q'+(qi+1)+' / '+qs.length+'</div><div class="test-q-text">'+q.q+'</div><div class="test-opts">'+optsH+'</div></div>';
   }).join("");
-  var html='<div class="card"><div class="version-badge">📝 Mini Test · Attempt '+(an+1)+'/3</div>'+dots+'<div style="font-size:14px;color:var(--muted);margin-bottom:8px">Answer ALL questions then tap Submit 答完所有题目再提交</div><div id="tProgress" style="font-size:14px;color:var(--muted);text-align:right;margin-bottom:8px">0 / '+qs.length+' answered</div>'+qH+'<button type="button" class="test-submit-btn" id="tSubmit" onclick="submitTest()" disabled>Answer all questions (0/'+qs.length+')</button><div class="feedback" id="tFb" style="display:none;margin-top:9px"></div></div>';
+  var histHtml=attemptListHtml("test:"+S.currentSL,"renderStepTest(getSLById(S.currentSL))");
+  var html='<div class="card"><div class="version-badge">📝 Mini Test · Attempt '+(an+1)+'/3</div>'+dots+histHtml+'<div style="font-size:14px;color:var(--muted);margin-bottom:8px">Answer ALL questions then tap Submit 答完所有题目再提交</div><div id="tProgress" style="font-size:14px;color:var(--muted);text-align:right;margin-bottom:8px">0 / '+qs.length+' answered</div>'+qH+'<button type="button" class="test-submit-btn" id="tSubmit" onclick="submitTest()" disabled>Answer all questions (0/'+qs.length+')</button><div class="feedback" id="tFb" style="display:none;margin-top:9px"></div></div>';
   document.getElementById("lessonContent").innerHTML=html;
   document.getElementById("lessonContent").querySelectorAll(".test-opt").forEach(function(btn){
     btn.addEventListener("click",function(){
@@ -1494,6 +1597,7 @@ function submitTest(){
   qs.forEach(function(q,i){if(testSels[i]===q.a)correct++;});
   var passed=correct>=3;
   st.testAttempts.push(passed);
+  saveAttempt("test:"+S.currentSL, qs, testSels, correct, qs.length);
   if(passed){
     st.testPassed=true;st.testDone=true;
     S.lessonLog[todayStr()]="done";
@@ -1900,10 +2004,30 @@ function renderHomework(){
         +'<div style="display:flex;gap:8px;margin-top:11px">'
         +'<button type="button" class="btn btn-secondary" style="padding:12px;border-radius:11px;font-size:15px;flex:1" onclick="showHwRule(\''+t.id+'\')">📐 Rules 规则</button>'
         +'<button type="button" class="btn btn-primary" style="padding:12px;border-radius:11px;font-size:15px;flex:1" onclick="startHomework(\''+t.id+'\')">💻 Practise 练习</button>'
-        +'</div></div></div>';
+        +'</div>'
+        +(getAttempts("hw:"+t.id).length?('<button type="button" class="btn btn-secondary" style="padding:11px;border-radius:11px;font-size:14px;width:100%;margin-top:7px" onclick="showHwHistory(\''+t.id+'\')">📊 See my '+getAttempts("hw:"+t.id).length+' recent attempt(s) 查看记录</button>'):"")
+        +'</div></div>';
     });
   });
   body.innerHTML=h;
+}
+
+
+function showHwHistory(topicId){
+  var t=getHwTopic(topicId);if(!t)return;
+  var list=getAttempts("hw:"+topicId);
+  var h='<div class="card">'
+    +'<button type="button" class="btn btn-secondary" style="width:100%;padding:12px;border-radius:11px;margin-bottom:13px" onclick="renderHomework()">← Back to Topics 返回</button>'
+    +'<div style="font-size:19px;font-weight:900;color:var(--g1)">'+t.icon+' '+t.title+'</div>'
+    +'<div style="font-size:14px;color:var(--muted);margin-bottom:14px">'+t.titleZh+'</div>';
+  if(!list.length){
+    h+='<div style="text-align:center;padding:26px 12px;font-size:16px;color:var(--muted)">No attempts yet. 还没有记录。</div>';
+  } else {
+    h+=attemptListHtml("hw:"+topicId,"showHwHistory(\''+topicId+'\')");
+  }
+  h+='<button type="button" class="btn btn-primary" style="width:100%;padding:13px;border-radius:12px" onclick="startHomework(\''+topicId+'\')">💻 Practise Again 再练习</button></div>';
+  document.getElementById("homeworkBody").innerHTML=h;
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 function getHwTopic(id){
@@ -1959,6 +2083,7 @@ function renderHomeworkQuiz(){
     +(best!==undefined?'<div style="text-align:right"><div style="font-size:13px;color:var(--muted)">Best</div><div style="font-size:21px;font-weight:900;color:var(--g1)">'+best+'/20</div></div>':'')
     +'</div>'
     +'<button type="button" class="btn btn-secondary" style="padding:9px;border-radius:11px;font-size:15px;width:100%;margin-bottom:12px" onclick="renderHomework()">← Back to Topics 返回</button>'
+    +attemptListHtml("hw:"+hwState.slId,"startHomework(\''+hwState.slId+'\')")
     +'<div id="hwProgress" style="font-size:14px;color:var(--muted);text-align:right;margin-bottom:8px">0 / '+total+' answered</div>'
     +qH
     +'<button type="button" class="test-submit-btn" id="hwSubmit" onclick="submitHomework()" disabled>Answer all questions (0/'+total+')</button>'
@@ -1993,6 +2118,7 @@ function submitHomework(){
   qs.forEach(function(q,i){if(hwState.answers[i]===q.a)correct++;});
   var scoreOutOf20=Math.round(correct/total*20);
 
+  saveAttempt("hw:"+hwState.slId, qs, hwState.answers, correct, total);
   var prevBest=S.hwScores[hwState.slId];
   var isNewBest=prevBest===undefined||scoreOutOf20>prevBest;
   if(isNewBest)S.hwScores[hwState.slId]=scoreOutOf20;
