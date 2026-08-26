@@ -621,7 +621,7 @@ function showLoading(on){
 
 
 
-var APP_VERSION="3.7.0";
+var APP_VERSION="3.7.1";
 
 
 const HABITS_DATA=[{"id": "h1", "text": "Complete today's app lesson", "textZh": "完成今天的课程", "icon": "📱"}, {"id": "h2", "text": "Read one English sign or label out loud", "textZh": "大声朗读一个英文标志或标签", "icon": "🔤"}, {"id": "h3", "text": "Watch 15 mins of English TV with subtitles", "textZh": "看15分钟带字幕的英语电视", "icon": "📺"}, {"id": "h4", "text": "Send one WhatsApp message in English", "textZh": "发一条英文WhatsApp消息", "icon": "💬"}, {"id": "h5", "text": "Learn one new word and use it today", "textZh": "学一个新单词并在今天使用它", "icon": "⭐"}, {"id": "h6", "text": "Read one English sentence from a notice or sign", "textZh": "从通知或标志中读一个英文句子", "icon": "📋"}, {"id": "h7", "text": "Have a 5-minute English conversation", "textZh": "进行5分钟的英语对话", "icon": "🗣️"}];
@@ -787,7 +787,22 @@ function getAttempts(key){
 /* A compact list of past attempts, tappable */
 function attemptListHtml(key, backFn){
   var list = getAttempts(key);
-  if(!list.length) return "";
+  if(!list.length){
+    // She may have older attempts recorded before history tracking existed
+    var hadBefore = false;
+    if(key.indexOf("hw:")===0) hadBefore = S.hwScores[key.slice(3)]!==undefined;
+    else if(key.indexOf("test:")===0){
+      var st0 = S.slState && S.slState[key.slice(5)];
+      hadBefore = !!(st0 && st0.testAttempts && st0.testAttempts.length);
+    }
+    if(hadBefore){
+      return '<div style="background:var(--g6);border-radius:13px;padding:13px;margin-bottom:14px;font-size:14px;color:var(--muted);line-height:1.6">'
+        + '📊 Your answers will be saved from now on.<br>Finish this round to see your first detailed record.<br>'
+        + '\u4ece\u73b0\u5728\u5f00\u59cb\u4f1a\u4fdd\u5b58\u4f60\u7684\u7b54\u6848\u3002'
+        + '</div>';
+    }
+    return "";
+  }
   var h = '<div style="background:var(--g6);border-radius:13px;padding:14px;margin-bottom:14px">'
     + '<div style="font-size:15px;font-weight:800;color:var(--g1);margin-bottom:9px">📊 Recent attempts 最近记录</div>';
   list.forEach(function(r, i){
